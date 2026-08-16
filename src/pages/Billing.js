@@ -295,30 +295,33 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
   };
 
   return (
-    <Box sx={{ display: "flex", gap: 2, p: 2 }}>
-      {/* LEFT SIDE */}
-      <Box sx={{ flex: 2 }}>
-        {/* Product Search */}
-        <Box sx={{ p: 2, border: "1px solid #ddd", borderRadius: 2 }}>
-          <Typography variant="h6">🔍 Product Search</Typography>
+    <Box sx={{ display: "flex", gap: 2, p: 1, flexWrap: "wrap" }}>
+      <Box sx={{ flex: 2, minWidth: 320 }}>
+        <Box sx={{ p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#111827" }}>Product Search</Typography>
           {selectedProduct && !isPriced && (
-            <Typography color="error" sx={{ mt: 1 }}>
+            <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
               ⚠ Please set price before adding to cart
             </Typography>
           )}
-          {/* FLEX ROW */}
-          <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-            {/* LEFT SIDE (search + dropdown) */}
-            <Box sx={{ flex: 1, position: "relative" }}>
-              {/* Search Input */}
+          <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
+            <Box sx={{ flex: 1, minWidth: 220, position: "relative" }}>
               <TextField
                 fullWidth
                 placeholder="Search by product name or SKU..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#F8FAFC",
+                    "& fieldset": { borderColor: "#CBD5E1" },
+                    "&:hover fieldset": { borderColor: "#94A3B8" },
+                    "&.Mui-focused fieldset": { borderColor: "#3B82F6", borderWidth: "1px" },
+                  },
+                }}
               />
 
-              {/* 🔽 DROPDOWN BELOW INPUT */}
               {debouncedSearch && filteredProducts.length > 0 && (
                 <Box
                   sx={{
@@ -326,27 +329,29 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
                     top: "100%",
                     left: 0,
                     right: 0,
-                    border: "1px solid #ddd",
-                    borderRadius: 1,
-                    mt: 0.5,
-                    maxHeight: 200,
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 2,
+                    mt: 0.75,
+                    maxHeight: 220,
                     overflowY: "auto",
                     backgroundColor: "#fff",
                     zIndex: 10,
+                    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
                   }}
                 >
                   {filteredProducts.map((p) => (
                     <Box
                       key={p.id}
                       sx={{
-                        p: 1,
+                        p: 1.1,
                         cursor: "pointer",
-                        "&:hover": { backgroundColor: "#f5f5f5" },
+                        color: "#1F2937",
+                        "&:hover": { backgroundColor: "#F8FAFC" },
                       }}
                       onClick={() => {
                         setSelectedId(p.id);
                         setSearchText(p.name);
-                        setDebouncedSearch(""); 
+                        setDebouncedSearch("");
                       }}
                     >
                       {p.name}
@@ -356,28 +361,28 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
               )}
             </Box>
 
-            {/* RIGHT SIDE BUTTON */}
             <Button
               variant="contained"
               onClick={addToCart}
               disabled={!selectedProduct || !isPriced || selectedStock <= 0}
+              sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700, px: 2.2 }}
             >
-              ➕ Add to Cart
+              Add to Cart
             </Button>
           </Box>
           {selectedProduct && (
             <Typography
               color={selectedStock <= 0 ? "error" : "text.secondary"}
-              sx={{ mt: 1, fontSize: 13 }}
+              sx={{ mt: 1.5, fontSize: 13, fontWeight: 600 }}
             >
               Available stock: {selectedStock}
             </Typography>
           )}
         </Box>
-        <Box sx={{ mt: 2, p: 2, border: "1px solid #ddd", borderRadius: 2 }}>
-          <Typography variant="h6">🛍 Shopping Cart ({cart.length})</Typography>
+        <Box sx={{ mt: 2, p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#111827" }}>Shopping Cart ({cart.length})</Typography>
           <TableContainer
-            sx={{ mt: 2, border: "1px solid #ddd", borderRadius: 2 }}
+            sx={{ mt: 2, border: "1px solid #E2E8F0", borderRadius: 2 }}
           >
             <Table size="small">
               {/* HEADER */}
@@ -456,105 +461,102 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
         </Box>
       </Box>
 
-      {/* RIGHT SIDE */}
-      <Box sx={{ flex: 1 }}>
-        <Box sx={{ p: 2, border: "1px solid #ddd", borderRadius: 2 }}>
-          <Typography>Subtotal: ₹{grandTotal}</Typography>
+<Box sx={{ flex: 1, minWidth: 300 }}>
+        <Box sx={{ p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#111827" }}>Bill Summary</Typography>
 
-          {/* Tax */}
-          <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-            <Typography>Tax:</Typography>
-            <TextField
-              size="small"
-              value={taxPercent}
-              onChange={(e) => setTaxPercent(Number(e.target.value || 0))}
-              sx={{ mx: 1, width: 80 }}
-            />
+          <Box sx={{ mt: 2, display: "grid", gap: 1.5 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", color: "#334155" }}>
+              <Typography>Subtotal</Typography>
+              <Typography sx={{ fontWeight: 700 }}>₹{grandTotal}</Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">Tax</Typography>
+              <TextField
+                size="small"
+                value={taxPercent}
+                onChange={(e) => setTaxPercent(Number(e.target.value || 0))}
+                sx={{ width: 90, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              />
+            </Box>
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", color: "#334155" }}>
+              <Typography>Tax Amount</Typography>
+              <Typography sx={{ fontWeight: 700 }}>₹{taxAmount}</Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">Discount</Typography>
+              <TextField
+                size="small"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(Number(e.target.value || 0))}
+                sx={{ width: 90, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              />
+            </Box>
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", color: "#DC2626" }}>
+              <Typography>Discount Amount</Typography>
+              <Typography sx={{ fontWeight: 700 }}>₹{discountAmount}</Typography>
+            </Box>
           </Box>
 
-          <Typography>Tax Amount: ₹{taxAmount}</Typography>
+          <Box sx={{ my: 2, borderTop: "1px solid #E2E8F0" }} />
 
-          {/* Discount */}
-          <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-            <Typography>Discount:</Typography>
-            <TextField
-              size="small"
-              value={discountPercent}
-              onChange={(e) => setDiscountPercent(Number(e.target.value || 0))}
-              sx={{ mx: 1, width: 80 }}
-            />
-          </Box>
-
-          <Typography color="red">Discount: ₹{discountAmount}</Typography>
-
-          <hr />
-
-          <Typography variant="h5" color="green">
+          <Typography variant="h5" sx={{ color: "#16A34A", fontWeight: 800 }}>
             Total: ₹{finalTotal}
           </Typography>
         </Box>
-        <Box sx={{ mt: 2, p: 2, border: "1px solid #ddd", borderRadius: 2 }}>
-          <Typography variant="h6">💳 Payment Details</Typography>
+        <Box sx={{ mt: 2, p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#111827" }}>Payment Details</Typography>
 
-          {/* Payment Method */}
-          <Box sx={{ mt: 1 }}>
-            <label>
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMode === "cash"}
-                onChange={() => setPaymentMode("cash")}
-              />{" "}
+          <Box sx={{ mt: 1.5, display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, color: "#334155" }}>
+              <input type="radio" name="payment" checked={paymentMode === "cash"} onChange={() => setPaymentMode("cash")} />
               Cash
             </label>
 
-            <label style={{ marginLeft: 20 }}>
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMode === "upi"}
-                onChange={() => setPaymentMode("upi")}
-              />{" "}
+            <label style={{ display: "flex", alignItems: "center", gap: 6, color: "#334155" }}>
+              <input type="radio" name="payment" checked={paymentMode === "upi"} onChange={() => setPaymentMode("upi")} />
               UPI
             </label>
           </Box>
 
-          {/* Customer Info */}
           <TextField
             fullWidth
             label="Customer Name"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <TextField
             fullWidth
             label="Phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <TextField
             fullWidth
             label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
 
-          {/* Actions */}
           <Button
             fullWidth
             variant="contained"
             color="success"
-            sx={{ mt: 2 }}
+            sx={{ mt: 2, textTransform: "none", borderRadius: 2, fontWeight: 700 }}
             onClick={handleSaveAndPrint}
           >
-            💾 Save & Print
+            Save & Print
           </Button>
 
-          <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-            <Button fullWidth variant="outlined" onClick={handleSaveOnly}>
+          <Box sx={{ display: "flex", gap: 1, mt: 1.5, flexWrap: "wrap" }}>
+            <Button fullWidth variant="outlined" onClick={handleSaveOnly} sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700 }}>
               Save Only
             </Button>
 
@@ -564,6 +566,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
               variant="outlined"
               startIcon={<WhatsAppIcon />}
               onClick={handleSaveAndWhatsApp}
+              sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700 }}
             >
               WhatsApp
             </Button>
@@ -573,6 +576,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
               color="error"
               variant="contained"
               onClick={handleClearCart}
+              sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700 }}
             >
               Clear Cart
             </Button>

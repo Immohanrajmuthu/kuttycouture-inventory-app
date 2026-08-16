@@ -40,9 +40,10 @@ const Header = ({ settings }) => {
       <AppBar
         position="static"
         sx={{
-          backgroundColor: "#fff",
-          color: "#333",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          backgroundColor: "#1F2A44",
+          color: "#FFFFFF",
+          boxShadow: "0 4px 16px rgba(17, 24, 39, 0.12)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <Toolbar>
@@ -76,10 +77,10 @@ const Header = ({ settings }) => {
               flexGrow: 1,
               display: "flex",
               gap: 1,
-              backgroundColor: "#fafafa",
-              "&:hover": {
-                transform: "translateY(-1px)",
-              },
+              alignItems: "center",
+              backgroundColor: "rgba(255,255,255,0.04)",
+              borderRadius: "12px",
+              padding: "6px 8px",
             }}
           >
             {menu.map((item) => {
@@ -92,11 +93,15 @@ const Header = ({ settings }) => {
                   onClick={() => navigate(item.path)}
                   sx={{
                     textTransform: "none",
-                    fontWeight: 500,
-                    color: isActive ? "#1976d2" : "#555",
-                    backgroundColor: isActive ? "#e3f2fd" : "transparent",
+                    fontWeight: 600,
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 0.75,
+                    color: isActive ? "#FFFFFF" : "#DDE6F5",
+                    backgroundColor: isActive ? "#3B82F6" : "transparent",
+                    boxShadow: isActive ? "0 6px 16px rgba(59, 130, 246, 0.28)" : "none",
                     "&:hover": {
-                      backgroundColor: "#f5f5f5",
+                      backgroundColor: isActive ? "#2563EB" : "rgba(255,255,255,0.08)",
                     },
                   }}
                 >
@@ -110,9 +115,10 @@ const Header = ({ settings }) => {
           <IconButton
             onClick={() => setOpenAbout(true)}
             sx={{
-              color: "#555",
+              color: "#E2E8F0",
+              backgroundColor: "rgba(255,255,255,0.04)",
               "&:hover": {
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "rgba(255,255,255,0.1)",
               },
             }}
             title="About"

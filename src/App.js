@@ -1,9 +1,52 @@
 import React, { useState, useEffect, Suspense, lazy } from "react";
 import Header from "./components/Header";
 import { Typography } from "@mui/material";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { normalizeAppSettings } from "./utils/appSettings";
+
+const appTheme = createTheme({
+  palette: {
+    primary: {
+      main: "#1F2A44",
+      contrastText: "#FFFFFF",
+    },
+    secondary: {
+      main: "#3B82F6",
+      contrastText: "#FFFFFF",
+    },
+    warning: {
+      main: "#F59E0B",
+      contrastText: "#111827",
+    },
+    success: {
+      main: "#16A34A",
+      contrastText: "#FFFFFF",
+    },
+    error: {
+      main: "#DC2626",
+      contrastText: "#FFFFFF",
+    },
+    background: {
+      default: "#F4F7FB",
+      paper: "#FFFFFF",
+    },
+    text: {
+      primary: "#111827",
+      secondary: "#64748B",
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  typography: {
+    fontFamily: '"Segoe UI", "Roboto", sans-serif',
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 700 },
+    h6: { fontWeight: 700 },
+  },
+});
 
 // Lazy load all page components for better startup performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -24,7 +67,8 @@ const LoadingFallback = () => (
     alignItems: "center",
     height: "100vh",
     fontSize: "16px",
-    color: "#666"
+    color: "#475569",
+    backgroundColor: "#F4F7FB"
   }}>
     Loading...
   </div>
@@ -82,110 +126,115 @@ useEffect(() => {
 }, [settings, isLoaded]);
 
   return (
-    <Router>
-      {isLoaded && <Header settings={settings} />}
+    <ThemeProvider theme={appTheme}>
+      <Router>
+        {isLoaded && <Header settings={settings} />}
 
-      <div style={{ padding: "20px" }}>
-        {!isLoaded ? (
-          <LoadingFallback />
-        ) : (
-          <Suspense fallback={<LoadingFallback />}>
-            {isFirstLaunch ? (
-              // First Launch: Show only Settings page with a message
-              <div>
-                <div style={{ 
-                  backgroundColor: "#fff3cd", 
-                  border: "1px solid #ffc107", 
-                  padding: "16px", 
-                  borderRadius: "4px",
-                  marginBottom: "20px"
-                }}>
-                  <Typography variant="h6" style={{ color: "#856404" }}>
-                    Welcome! Please configure your settings to get started
-                  </Typography>
+        <div style={{
+          padding: "20px",
+          backgroundColor: "#F4F7FB",
+          minHeight: "calc(100vh - 72px)"
+        }}>
+          {!isLoaded ? (
+            <LoadingFallback />
+          ) : (
+            <Suspense fallback={<LoadingFallback />}>
+              {isFirstLaunch ? (
+                <div>
+                  <div style={{
+                    backgroundColor: "#FFF7ED",
+                    border: "1px solid #F59E0B",
+                    padding: "16px 18px",
+                    borderRadius: "12px",
+                    marginBottom: "20px",
+                    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.04)"
+                  }}>
+                    <Typography variant="h6" style={{ color: "#7C2D12" }}>
+                      Welcome! Please configure your settings to get started
+                    </Typography>
+                  </div>
+                  <Settings
+                    products={products}
+                    bills={bills}
+                    settings={settings}
+                    setSettings={setSettings}
+                    isFirstLaunch={true}
+                    onSetupComplete={() => setIsFirstLaunch(false)}
+                  />
                 </div>
-                <Settings
-                  products={products}
-                  bills={bills}
-                  settings={settings}
-                  setSettings={setSettings}
-                  isFirstLaunch={true}
-                  onSetupComplete={() => setIsFirstLaunch(false)}
-                />
-              </div>
-            ) : (
-              // Normal: Show all routes
-              <Routes>
-                <Route path="/" element={<Dashboard products={products} bills={bills} />} />
-          <Route
-            path="/add-product"
-            element={
-              <AddProduct
-                products={products}
-                setProducts={setProducts}
-                editingProduct={editingProduct}
-                setEditingProduct={setEditingProduct}
-                settings={settings}
+              ) : (
+                <Routes>
+                  <Route path="/" element={<Dashboard products={products} bills={bills} />} />
+              <Route
+                path="/add-product"
+                element={
+                  <AddProduct
+                    products={products}
+                    setProducts={setProducts}
+                    editingProduct={editingProduct}
+                    setEditingProduct={setEditingProduct}
+                    settings={settings}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <Products
-                products={products}
-                setProducts={setProducts}
-                editingProduct={editingProduct}
-                setEditingProduct={setEditingProduct}
-                settings={settings}
+              <Route
+                path="/products"
+                element={
+                  <Products
+                    products={products}
+                    setProducts={setProducts}
+                    editingProduct={editingProduct}
+                    setEditingProduct={setEditingProduct}
+                    settings={settings}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/pricing"
-            element={<Pricing products={products} setProducts={setProducts} />}
-          />
-          <Route
-            path="/billing"
-            element={
-              <Billing
-                products={products}
-                setProducts={setProducts}
-                bills={bills}
-                setBills={setBills}
-                settings={settings}
+              <Route
+                path="/pricing"
+                element={<Pricing products={products} setProducts={setProducts} />}
               />
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <Reports
-                bills={bills}
-                setBills={setBills}
-                settings={settings}
+              <Route
+                path="/billing"
+                element={
+                  <Billing
+                    products={products}
+                    setProducts={setProducts}
+                    bills={bills}
+                    setBills={setBills}
+                    settings={settings}
+                  />
+                }
               />
-            }
-          />
-          <Route path="/alerts" element={<StockAlert products={products} />} />
-          <Route
-            path="/settings"
-            element={
-              <Settings
-                products={products}
-                bills={bills}
-                settings={settings}
-                setSettings={setSettings}
+              <Route
+                path="/reports"
+                element={
+                  <Reports
+                    bills={bills}
+                    setBills={setBills}
+                    settings={settings}
+                  />
+                }
               />
-            }
-          />
-          <Route path="/invoice" element={<Invoice settings={settings} />} />
-              </Routes>
-            )}
-          </Suspense>
-        )}
-      </div>
-    </Router>
+              <Route path="/alerts" element={<StockAlert products={products} />} />
+              <Route
+                path="/settings"
+                element={
+                  <Settings
+                    products={products}
+                    bills={bills}
+                    settings={settings}
+                    setSettings={setSettings}
+                  />
+                }
+              />
+              <Route path="/invoice" element={<Invoice settings={settings} />} />
+                </Routes>
+              )}
+            </Suspense>
+          )}
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 export default App;

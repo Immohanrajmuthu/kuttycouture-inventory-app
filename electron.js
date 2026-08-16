@@ -4,6 +4,9 @@ const fs = require("fs");
 
 const Store = require("electron-store");
 
+// Development mode detection
+const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
+
 let store;
 let mainWindow;
 
@@ -59,7 +62,16 @@ app.on("ready", () => {
 });
 
 console.log("Preload path:", path.join(__dirname, "preload.js"));
+console.log("Development mode:", isDev);
 
+// Load electron-reloader in development
+if (isDev) {
+  try {
+    require("electron-reloader")(module);
+  } catch (err) {
+    console.warn("electron-reloader not installed. Run: npm install --save-dev electron-reloader");
+  }
+}
 
 function createWindow() {
   const iconPath = path.join(__dirname, "build", "appIcon.ico");
@@ -77,9 +89,17 @@ function createWindow() {
     },
   });
 
-  mainWindow
-    .loadFile(path.join(__dirname, "build", "index.html"))
-    .catch((err) => console.error("LOAD ERROR:", err));
+  // Load URL based on environment
+  const startUrl = isDev
+    ? "http://localhost:3000" // React dev server
+    : `file://${path.join(__dirname, "build", "index.html")}`; // Production build
+
+  if (isDev) {
+    mainWindow.loadURL(startUrl).catch((err) => console.error("LOAD ERROR:", err));
+    mainWindow.webContents.openDevTools(); // Open dev tools in development
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "build", "index.html")).catch((err) => console.error("LOAD ERROR:", err));
+  }
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();

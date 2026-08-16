@@ -36,28 +36,41 @@ const isToday = (value) => {
 const getItemsCount = (bill) =>
   (bill.items || []).reduce((sum, item) => sum + Number(item.qty || 0), 0);
 
-const SummaryCard = ({ title, value, helper, icon, color = "#1976d2" }) => (
+const SummaryCard = ({ title, value, helper, icon, color = "#1F2A44" }) => (
   <Box
     sx={{
-      p: 2,
-      border: "1px solid #e5e7eb",
-      borderRadius: 2,
-      backgroundColor: "#fff",
-      minHeight: 118,
+      p: 2.2,
+      border: "1px solid #E2E8F0",
+      borderRadius: 3,
+      background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+      minHeight: 130,
+      boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
     }}
   >
-    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
       <Box>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ letterSpacing: 0.2 }}>
           {title}
         </Typography>
-        <Typography variant="h5" sx={{ mt: 0.5, fontWeight: 700 }}>
+        <Typography variant="h5" sx={{ mt: 0.8, fontWeight: 800, color: "#111827" }}>
           {value}
         </Typography>
       </Box>
-      <Box sx={{ color }}>{icon}</Box>
+      <Box
+        sx={{
+          color,
+          backgroundColor: `${color}14`,
+          borderRadius: 2,
+          p: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </Box>
     </Box>
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 2, lineHeight: 1.5 }}>
       {helper}
     </Typography>
   </Box>
@@ -155,16 +168,18 @@ const Dashboard = ({ products = [], bills = [] }) => {
           alignItems: "center",
           gap: 3,
           p: 3,
-          backgroundColor: "#f5f5f5",
-          borderRadius: 2,
+          background: "linear-gradient(135deg, #1F2A44 0%, #3B82F6 100%)",
+          borderRadius: 3,
           mb: 2,
+          color: "#fff",
+          boxShadow: "0 12px 28px rgba(31, 42, 68, 0.15)",
         }}
       >
         <Box
           sx={{
             width: 80,
             height: 80,
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "rgba(255,255,255,0.14)",
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
@@ -176,29 +191,37 @@ const Dashboard = ({ products = [], bills = [] }) => {
           📦
         </Box>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "#fff" }}>
             Welcome to Inventory Manager
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)" }}>
             Manage your products, track sales, and generate reports effortlessly.
           </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "#111827" }}>
             Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Today&apos;s sales, stock health, and inventory readiness.
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Button variant="contained" onClick={() => navigate("/billing")}>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/billing")}
+            sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700, px: 2 }}
+          >
             New Bill
           </Button>
-          <Button variant="outlined" onClick={() => navigate("/reports")}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/reports")}
+            sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700, px: 2 }}
+          >
             Reports
           </Button>
         </Box>
@@ -247,14 +270,15 @@ const Dashboard = ({ products = [], bills = [] }) => {
           gap: 2,
         }}
       >
-        <Box sx={{ p: 2, border: "1px solid #e5e7eb", borderRadius: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="h6">Today Sales Details</Typography>
+        <Box sx={{ p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 6px 18px rgba(15, 23, 42, 0.04)" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#111827" }}>Today Sales Details</Typography>
             <Chip
               size="small"
               label={formatCurrency(insights.todayRevenue)}
               color="success"
-              variant="outlined"
+              variant="filled"
+              sx={{ fontWeight: 700 }}
             />
           </Box>
           <TableContainer>
@@ -298,9 +322,9 @@ const Dashboard = ({ products = [], bills = [] }) => {
           </TableContainer>
         </Box>
 
-        <Box sx={{ p: 2, border: "1px solid #e5e7eb", borderRadius: 2 }}>
-          <Typography variant="h6">Low Quantity Alerts</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <Box sx={{ p: 2.5, border: "1px solid #E2E8F0", borderRadius: 3, backgroundColor: "#FFFFFF", boxShadow: "0 6px 18px rgba(15, 23, 42, 0.04)" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#111827" }}>Low Quantity Alerts</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             Uses each product&apos;s min stock, or 10 when not set.
           </Typography>
           {insights.lowStock.length === 0 ? (
@@ -340,8 +364,9 @@ const Dashboard = ({ products = [], bills = [] }) => {
               })}
               <Button
                 size="small"
-                variant="outlined"
+                variant="contained"
                 onClick={() => navigate("/products")}
+                sx={{ mt: 1, textTransform: "none", fontWeight: 700, borderRadius: 2 }}
               >
                 Manage Stock
               </Button>
