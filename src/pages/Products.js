@@ -56,8 +56,6 @@ const Products = ({ products, setProducts, setEditingProduct }) => {
     });
 
     setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
-
     setOpenPricing(false);
   };
 

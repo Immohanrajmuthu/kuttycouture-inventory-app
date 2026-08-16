@@ -31,8 +31,9 @@ const Invoice = ({ settings }) => {
   const appSettings = normalizeAppSettings(settings);
 
   useEffect(() => {
-    const data = localStorage.getItem("selectedInvoice");
-    if (data) setBill(JSON.parse(data));
+    window.electronAPI.getData("selectedInvoice").then((data) => {
+      if (data) setBill(data);
+    });
   }, []);
 
   if (!bill) return <p>No invoice found</p>;

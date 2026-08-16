@@ -14,7 +14,6 @@
     "@mui/x-data-grid": "^9.0.2",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.1.1",
-    "file-saver": "^2.0.5",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "react": "^19.2.5",
@@ -25,12 +24,11 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "start": "react-scripts start",
     "electron": "node ./node_modules/electron/cli.js ./electron.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 --timeout 30000 && npm run electron\"",
+    "desktop": "npm run build && npm run electron",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
     "pack:win": "npm run build && electron-builder --win portable --publish never"
   },
@@ -53,10 +51,8 @@
     ]
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "electron": "^41.3.0",
-    "electron-builder": "^26.8.1",
-    "wait-on": "^9.0.5"
+    "electron-builder": "^26.8.1"
   },
   "build": {
     "appId": "com.kuttycouture.inventory",

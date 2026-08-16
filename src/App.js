@@ -37,37 +37,21 @@ function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
-  //   const [products, setProducts] = useState(() => {
-  //   const saved = localStorage.getItem("products");
-  //   return saved ? JSON.parse(saved) : [];
-  // });
-
-  // const [bills, setBills] = useState(() => {
-  //   const saved = localStorage.getItem("bills");
-  //   return saved ? JSON.parse(saved) : [];
-  // });
-
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
  const loadData = async () => {
   try {
-    if (window.electronAPI?.getData) {
-      const data = await window.electronAPI.getData();
-      setProducts(data.products || []);
-      setBills(data.bills || []);
-      const loadedSettings = normalizeAppSettings(data.settings);
-      setSettings(loadedSettings);
-      setIsFirstLaunch(!loadedSettings.hasCompletedSetup);
-    } else {
-      const loadedSettings = normalizeAppSettings(
-        JSON.parse(localStorage.getItem("settings") || "{}"),
-      );
-      setProducts(JSON.parse(localStorage.getItem("products") || "[]"));
-      setBills(JSON.parse(localStorage.getItem("bills") || "[]"));
-      setSettings(loadedSettings);
-      setIsFirstLaunch(!loadedSettings.hasCompletedSetup);
+    if (!window.electronAPI?.getData) {
+      throw new Error("The Electron desktop bridge is unavailable.");
     }
+
+    const data = await window.electronAPI.getData();
+    setProducts(data.products || []);
+    setBills(data.bills || []);
+    const loadedSettings = normalizeAppSettings(data.settings);
+    setSettings(loadedSettings);
+    setIsFirstLaunch(!loadedSettings.hasCompletedSetup);
 
     setIsLoaded(true);
 
@@ -82,31 +66,19 @@ function App() {
  useEffect(() => {
   if (!isLoaded) return;
 
-  if (window.electronAPI?.setData) {
-    window.electronAPI.setData("products", products);
-  } else {
-    localStorage.setItem("products", JSON.stringify(products));
-  }
+  window.electronAPI.setData("products", products);
 }, [products, isLoaded]);
 
 useEffect(() => {
   if (!isLoaded) return;
 
-  if (window.electronAPI?.setData) {
-    window.electronAPI.setData("bills", bills);
-  } else {
-    localStorage.setItem("bills", JSON.stringify(bills));
-  }
+  window.electronAPI.setData("bills", bills);
 }, [bills, isLoaded]);
 
 useEffect(() => {
   if (!isLoaded) return;
 
-  if (window.electronAPI?.setData) {
-    window.electronAPI.setData("settings", settings);
-  } else {
-    localStorage.setItem("settings", JSON.stringify(settings));
-  }
+  window.electronAPI.setData("settings", settings);
 }, [settings, isLoaded]);
 
   return (

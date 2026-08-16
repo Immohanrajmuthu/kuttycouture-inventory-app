@@ -1,32 +1,17 @@
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { formatPaymentMode } from "./paymentUtils";
 
 const saveWorkbook = (workbook, fileName, settings) => {
-  if (window.electronAPI?.saveFile && settings?.exportPath) {
-    const base64Data = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "base64",
-    });
-
-    window.electronAPI.saveFile({
-      directory: settings.exportPath,
-      fileName,
-      base64Data,
-    });
-    return;
-  }
-
-  const excelBuffer = XLSX.write(workbook, {
+  const base64Data = XLSX.write(workbook, {
     bookType: "xlsx",
-    type: "array",
+    type: "base64",
   });
 
-  const file = new Blob([excelBuffer], {
-    type: "application/octet-stream",
+  window.electronAPI.saveFile({
+    directory: settings?.exportPath,
+    fileName,
+    base64Data,
   });
-
-  saveAs(file, fileName);
 };
 
 export const exportSalesToExcel = (bills, settings) => {

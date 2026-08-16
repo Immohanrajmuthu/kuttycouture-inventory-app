@@ -20,19 +20,14 @@ npm ci
 
 If `npm ci` fails with an `EPERM unlink ... electron ... dll` error, close any running app windows from `dist\win-unpacked` or Electron development windows, then run it again.
 
-## Development
-
-Run React in browser mode:
+## Run the Windows Desktop App
 
 ```powershell
-npm start
+npm run desktop
 ```
 
-Run React and Electron together:
-
-```powershell
-npm run dev
-```
+This builds the React renderer and opens it only through Electron; the project
+does not include a browser development server.
 
 ## Build React Production Files
 
@@ -125,8 +120,7 @@ npx electron-builder --dir
 ## Useful Scripts
 
 ```text
-npm start       React dev server
-npm run dev     React dev server + Electron
+npm run desktop  Build and open the Electron desktop app
 npm run build   React production build
 npm run clean   Remove dist folder
 npm run dist:win Build Windows NSIS installer
