@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import SimpleProductForm from "../components/SimpleProductForm";
 import { useNavigate } from "react-router-dom";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, Box, Typography } from "@mui/material";
 
 const AddProduct = ({
   products,
@@ -46,12 +46,16 @@ const AddProduct = ({
     }
   }, [editingProduct, openSnackbar, navigate]);
   return (
-    <div>
+    <Box sx={{ p: 2, pb: 1 }}>
       {editingProduct && (
-        <h3 style={{ color: "#2e7d32" }}>✏ Editing: {editingProduct.name}</h3>
+        <Typography variant="body2" sx={{ color: "#16A34A", fontWeight: 600, mb: 0.5 }}>
+          ✏ Editing: {editingProduct.name}
+        </Typography>
       )}
 
-      <h2>{editingProduct ? "Edit Product" : "Add New Product"}</h2>
+      <Typography variant="h5" sx={{ fontWeight: 800, color: "#111827", mb: 1.5 }}>
+        {editingProduct ? "Edit Product" : "Add New Product"}
+      </Typography>
 
       <SimpleProductForm 
         onSave={handleSave} 
@@ -69,7 +73,7 @@ const AddProduct = ({
             : "Product added successfully!"}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 };
 

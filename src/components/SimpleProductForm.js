@@ -97,7 +97,7 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ maxWidth: 400, mx: "auto" }}
+      sx={{ maxWidth: 500, mx: "auto", my: 1, p: 2, backgroundColor: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 1 }}
     >
       <TextField
         label="Product Name"
@@ -105,7 +105,7 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
         value={product.name}
         onChange={handleChange}
         fullWidth
-        margin="normal"
+        margin="dense"
         required
       />
 
@@ -115,7 +115,7 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
         value={product.sku}
         onChange={handleChange}
         fullWidth
-        margin="normal"
+        margin="dense"
       />
 
       <TextField
@@ -125,28 +125,30 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
         value={product.quantity || ""}
         onChange={handleChange}
         fullWidth
-        margin="normal"
+        margin="dense"
       />
 
-      <TextField
-        label="Purchase Cost"
-        name="price"
-        type="number"
-        value={product.price || ""}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-      />
+      <Box sx={{ display: "flex", gap: 2 }}>
+        <TextField
+          label="Purchase Cost"
+          name="price"
+          type="number"
+          value={product.price || ""}
+          onChange={handleChange}
+          fullWidth
+          margin="dense"
+        />
 
-      <TextField
-        label="Selling Price"
-        name="sellingPrice"
-        type="number"
-        value={product.sellingPrice || ""}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-      />
+        <TextField
+          label="Selling Price"
+          name="sellingPrice"
+          type="number"
+          value={product.sellingPrice || ""}
+          onChange={handleChange}
+          fullWidth
+          margin="dense"
+        />
+      </Box>
 
       <TextField
         select
@@ -155,7 +157,7 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
         value={product.category}
         onChange={handleChange}
         fullWidth
-        margin="normal"
+        margin="dense"
       >
         {categories.map((cat) => (
           <MenuItem key={cat} value={cat}>
@@ -171,7 +173,7 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
         value={product.minStock || ""}
         onChange={handleChange}
         fullWidth
-        margin="normal"
+        margin="dense"
       />
 
       <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
