@@ -103,6 +103,56 @@ export const exportSalesToPDF = (bills, appSettings) => {
   savePdf(doc, fileName, settings);
 };
 
+export const exportProductsToPDF = (products, appSettings) => {
+  if (!products || products.length === 0) return false;
+
+  const settings = normalizeAppSettings(appSettings);
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  const fileName = `product_list_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(settings.shopName || "Kutty Couture", 14, 15);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(settings.shopAddress || "Product inventory list", 14, 21);
+  doc.setFontSize(15);
+  doc.text("Product List", 14, 32);
+  doc.setFontSize(9);
+  doc.text(`Generated: ${formatDate(new Date())}`, 14, 38);
+
+  autoTable(doc, {
+    startY: 44,
+    head: [["#", "Product", "Barcode", "Category", "Stock", "Purchase Cost", "Selling Price", "Min Stock"]],
+    body: products.map((product, index) => [
+      index + 1,
+      product.name || "-",
+      product.barcode || "-",
+      product.category || "No Category",
+      String(Number(product.quantity || 0)),
+      formatCurrency(product.price),
+      formatCurrency(product.pricing?.single),
+      String(Number(product.minStock || 0)),
+    ]),
+    theme: "grid",
+    headStyles: {
+      fillColor: [35, 35, 35],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+    },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 10 },
+      4: { halign: "right" },
+      5: { halign: "right" },
+      6: { halign: "right" },
+      7: { halign: "right" },
+    },
+  });
+
+  savePdf(doc, fileName, settings);
+  return true;
+};
+
 export const createInvoicePdf = (bill, appSettings) => {
   const settings = normalizeAppSettings(appSettings);
   const doc = new jsPDF({ unit: "mm", format: "a4" });
