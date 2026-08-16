@@ -62,10 +62,7 @@ console.log("Preload path:", path.join(__dirname, "preload.js"));
 
 
 function createWindow() {
-  const isDev = !app.isPackaged;
-  const iconPath = isDev
-    ? path.join(__dirname, "public", "appIcon.ico")
-    : path.join(__dirname, "build", "appIcon.ico");
+  const iconPath = path.join(__dirname, "build", "appIcon.ico");
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -80,14 +77,9 @@ function createWindow() {
     },
   });
 
-  if (isDev) {
-    mainWindow
-      .loadURL("http://localhost:3000")
-      .catch((err) => console.error("LOAD ERROR:", err));
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname, "build/index.html"));
-  }
+  mainWindow
+    .loadFile(path.join(__dirname, "build", "index.html"))
+    .catch((err) => console.error("LOAD ERROR:", err));
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
@@ -112,6 +104,7 @@ app
 
 // ✅ Storage IPC
 ipcMain.handle("get-data", (event, key) => {
+  if (!key) return store.store;
   return store.get(key);
 });
 
@@ -131,12 +124,24 @@ ipcMain.handle("select-export-folder", async () => {
   return result.filePaths[0] || "";
 });
 
-ipcMain.handle("save-file", async (event, { directory, fileName, base64Data }) => {
-  if (!directory || !fileName || !base64Data) return false;
+ipcMain.handle("save-file", async (event, { directory, fileName, base64Data, textData }) => {
+  if (!fileName || (!base64Data && textData === undefined)) return false;
 
-  const targetPath = path.join(directory, fileName);
-  await fs.promises.mkdir(directory, { recursive: true });
-  await fs.promises.writeFile(targetPath, Buffer.from(base64Data, "base64"));
+  let targetPath = directory ? path.join(directory, fileName) : "";
+  if (!targetPath) {
+    const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+      defaultPath: fileName,
+    });
+    if (result.canceled || !result.filePath) return false;
+    targetPath = result.filePath;
+  }
+
+  await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.promises.writeFile(
+    targetPath,
+    textData === undefined ? Buffer.from(base64Data, "base64") : textData,
+    textData === undefined ? undefined : "utf8",
+  );
 
   return targetPath;
 });

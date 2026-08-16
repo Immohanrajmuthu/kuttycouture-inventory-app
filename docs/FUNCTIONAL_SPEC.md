@@ -8,7 +8,7 @@ Kutty Couture Inventory is a desktop-first inventory and billing application for
 - Track sales summaries and export reports.
 - Backup and restore operational data.
 
-The UI is built with React + Material UI, wrapped in Electron for desktop usage with local persistence via `electron-store` (fallback to browser localStorage).
+The UI is built with React + Material UI, wrapped in Electron for desktop usage with local persistence via `electron-store`.
 
 ---
 
@@ -34,7 +34,6 @@ The UI is built with React + Material UI, wrapped in Electron for desktop usage 
 **Feature:** Save and load products/bills locally.
 - On app startup, loads `products` and `bills`.
 - In Electron mode: uses IPC (`get-data`, `set-data`) with `electron-store`.
-- In browser mode: fallback to localStorage.
 - Data auto-saves whenever products or bills change.
 
 **Business Value:** Offline-capable usage and retained data between sessions.
@@ -141,7 +140,6 @@ The UI is built with React + Material UI, wrapped in Electron for desktop usage 
 
 ### 3.8 Invoice View
 **Feature:** Render single invoice with print/export.
-- Reads selected invoice from localStorage.
 - Displays business header, invoice info, customer info, itemized rows, total.
 - Actions:
   - Print invoice.
@@ -218,7 +216,6 @@ The UI is built with React + Material UI, wrapped in Electron for desktop usage 
 ## 6) Known Gaps / Improvement Opportunities
 - Dashboard metrics are minimal (currently only total products).
 - Stock alert threshold is fixed at 10 instead of per-product `minStock`.
-- Duplicate persistence path (`electron-store` + direct localStorage writes in some places) can be standardized.
 - No role-based access control or authentication.
 - No audit log for edits/deletions.
 

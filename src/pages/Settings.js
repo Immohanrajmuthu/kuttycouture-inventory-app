@@ -167,38 +167,21 @@ const Settings = ({ products, bills, settings, setSettings, isFirstLaunch = fals
 
   // Export Backup
   const handleExport = async () => {
-    // Validate export path is set
-    if (!draft.exportPath || !draft.exportPath.trim()) {
-      alert("Please set an export location in settings before exporting backup.");
-      return;
-    }
+    const storedProducts = await window.electronAPI.getData("products");
+    const storedBills = await window.electronAPI.getData("bills");
+    const storedSettings = await window.electronAPI.getData("settings");
+    const backup = {
+      products: storedProducts,
+      bills: storedBills,
+      settings: storedSettings,
+      date: new Date().toISOString(),
+    };
 
-    let backup;
-
-    if (window.electronAPI?.getData) {
-      const products = await window.electronAPI.getData("products");
-      const bills = await window.electronAPI.getData("bills");
-      const settings = await window.electronAPI.getData("settings");
-
-      backup = { products, bills, settings, date: new Date().toISOString() };
-    } else {
-      backup = {
-        products,
-        bills,
-        settings,
-        date: new Date().toISOString(),
-      };
-    }
-
-    const blob = new Blob([JSON.stringify(backup, null, 2)], {
-      type: "application/json",
+    await window.electronAPI.saveFile({
+      directory: draft.exportPath,
+      fileName: `backup_${Date.now()}.json`,
+      textData: JSON.stringify(backup, null, 2),
     });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `backup_${Date.now()}.json`;
-    a.click();
   };
 
   // Import Backup
@@ -211,21 +194,12 @@ const Settings = ({ products, bills, settings, setSettings, isFirstLaunch = fals
       try {
         const data = JSON.parse(e.target.result);
 
-        if (window.electronAPI?.setData) {
-          await window.electronAPI.setData("products", data.products || []);
-          await window.electronAPI.setData("bills", data.bills || []);
-          await window.electronAPI.setData(
-            "settings",
-            normalizeAppSettings(data.settings),
-          );
-        } else {
-          localStorage.setItem("products", JSON.stringify(data.products || []));
-          localStorage.setItem("bills", JSON.stringify(data.bills || []));
-          localStorage.setItem(
-            "settings",
-            JSON.stringify(normalizeAppSettings(data.settings)),
-          );
-        }
+        await window.electronAPI.setData("products", data.products || []);
+        await window.electronAPI.setData("bills", data.bills || []);
+        await window.electronAPI.setData(
+          "settings",
+          normalizeAppSettings(data.settings),
+        );
 
         alert("Backup restored successfully!");
         window.location.reload();
@@ -386,10 +360,10 @@ const Settings = ({ products, bills, settings, setSettings, isFirstLaunch = fals
                   value={draft.exportPath}
                   InputProps={{ readOnly: true }}
                   sx={{ mt: 2 }}
-                  placeholder="Not set - will use default downloads folder" />
+                  placeholder="Not set - choose a file location when exporting" />
                 {!draft.exportPath && (
-                  <Typography sx={{ mt: 1, fontSize: 12, color: "#d32f2f" }}>
-                    ⚠️ Export location not set. You must set this to export backups.
+                  <Typography sx={{ mt: 1, fontSize: 12, color: "#777" }}>
+                    No default folder is set. The desktop app will ask where to save each export.
                   </Typography>
                 )}
                 <Button
@@ -401,8 +375,7 @@ const Settings = ({ products, bills, settings, setSettings, isFirstLaunch = fals
                   Select Folder
                 </Button>
                 <Typography sx={{ mt: 1, fontSize: 12, color: "#777" }}>
-                  Folder saving works in the desktop app. Browser mode will continue
-                  to use normal downloads.
+                  Exports are saved by the Windows desktop app.
                 </Typography>
               </Box><Box
                 sx={{

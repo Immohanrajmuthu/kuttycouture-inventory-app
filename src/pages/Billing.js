@@ -25,10 +25,19 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [paymentMode, setPaymentMode] = useState("cash");
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [cart, setCart] = useState([]);
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
+
+  useEffect(() => {
+    window.electronAPI.getData("cart").then((savedCart) => {
+      setCart(savedCart || []);
+      setIsCartLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isCartLoaded) window.electronAPI.setData("cart", cart);
+  }, [cart, isCartLoaded]);
 
   const selectedProduct = products.find((p) => p.id === selectedId);
   const isPriced = Number(selectedProduct?.pricing?.single || 0) > 0;
@@ -169,7 +178,6 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
   const handleClearCart = (shouldConfirm = true) => {
     if (!shouldConfirm || window.confirm("Clear all items?")) {
       setCart([]);
-      localStorage.removeItem("cart"); // 🔥 important
     }
   };
   const saveBill = () => {

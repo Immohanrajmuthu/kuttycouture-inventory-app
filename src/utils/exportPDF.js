@@ -24,16 +24,11 @@ const getImageFormat = (dataUrl) => {
 };
 
 const savePdf = (doc, fileName, settings) => {
-  if (window.electronAPI?.saveFile && settings?.exportPath) {
-    window.electronAPI.saveFile({
-      directory: settings.exportPath,
-      fileName,
-      base64Data: getPdfBase64(doc),
-    });
-    return;
-  }
-
-  doc.save(fileName);
+  window.electronAPI.saveFile({
+    directory: settings?.exportPath,
+    fileName,
+    base64Data: getPdfBase64(doc),
+  });
 };
 
 const drawStoreHeader = (doc, settings, pageWidth, margin) => {
