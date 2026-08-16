@@ -137,6 +137,7 @@ useEffect(() => {
                 setProducts={setProducts}
                 editingProduct={editingProduct}
                 setEditingProduct={setEditingProduct}
+                settings={settings}
               />
             }
           />

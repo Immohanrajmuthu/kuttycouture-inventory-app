@@ -13,7 +13,10 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import AddIcon from "@mui/icons-material/Add";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
-const Products = ({ products, setProducts, setEditingProduct }) => {
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import { exportProductsToPDF } from "../utils/exportPDF";
+
+const Products = ({ products, setProducts, setEditingProduct, settings }) => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [updatedRowId, setUpdatedRowId] = useState(null);
@@ -38,6 +41,12 @@ const Products = ({ products, setProducts, setEditingProduct }) => {
   });
   const handleDelete = (id) => {
     setProducts(products.filter((p) => p.id !== id));
+  };
+
+  const handleExportProducts = () => {
+    if (!exportProductsToPDF(filteredProducts, settings)) {
+      alert("There are no products to export.");
+    }
   };
 
   const handleSavePricing = () => {
@@ -253,6 +262,17 @@ const Products = ({ products, setProducts, setEditingProduct }) => {
             }}
           >
             Pricing
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={handleExportProducts}
+            disabled={filteredProducts.length === 0}
+            sx={{ textTransform: "none", fontWeight: 500, px: 1.5 }}
+          >
+            Export PDF
           </Button>
         </Box>
       </Box>
