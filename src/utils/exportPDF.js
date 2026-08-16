@@ -123,15 +123,15 @@ export const exportProductsToPDF = (products, appSettings) => {
 
   autoTable(doc, {
     startY: 44,
-    head: [["#", "Product", "Barcode", "Category", "Stock", "Purchase Cost", "Selling Price", "Min Stock"]],
+    head: [["#", "Product", "SKU", "Category", "Stock", "Purchase Cost", "Selling Price", "Min Stock"]],
     body: products.map((product, index) => [
       index + 1,
       product.name || "-",
-      product.barcode || "-",
+      product.sku || product.barcode || "-",
       product.category || "No Category",
       String(Number(product.quantity || 0)),
       formatCurrency(product.price),
-      formatCurrency(product.pricing?.single),
+      formatCurrency(product.sellingPrice ?? product.pricing?.single),
       String(Number(product.minStock || 0)),
     ]),
     theme: "grid",
@@ -196,12 +196,15 @@ export const createInvoicePdf = (bill, appSettings) => {
 
   autoTable(doc, {
     startY: 72,
-    head: [["#", "Item", "Qty", "Unit Price", "Amount"]],
+    head: [["#", "Item", "Qty", "Unit Price", "Item Discount", "Amount"]],
     body: (bill.items || []).map((item, index) => [
       index + 1,
       item.name,
       item.qty,
-      formatCurrency(Number(item.total || 0) / Number(item.qty || 1)),
+      formatCurrency(item.unitPrice ?? Number(item.total || 0) / Number(item.qty || 1)),
+      Number(item.discountPercent || 0) > 0
+        ? `${Number(item.discountPercent).toFixed(2)}% (-${formatCurrency(item.discountAmount)})`
+        : "-",
       formatCurrency(item.total),
     ]),
     theme: "grid",
@@ -216,8 +219,9 @@ export const createInvoicePdf = (bill, appSettings) => {
     columnStyles: {
       0: { halign: "center", cellWidth: 12 },
       2: { halign: "center", cellWidth: 18 },
-      3: { halign: "right", cellWidth: 32 },
-      4: { halign: "right", cellWidth: 34 },
+      3: { halign: "right", cellWidth: 30 },
+      4: { halign: "right", cellWidth: 36 },
+      5: { halign: "right", cellWidth: 34 },
     },
   });
 

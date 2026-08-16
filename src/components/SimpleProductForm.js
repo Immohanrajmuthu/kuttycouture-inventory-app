@@ -4,9 +4,10 @@ import { TextField, Button, MenuItem, Box } from "@mui/material";
 const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category", "Jabla", "Frock", "Set"] }) => {
   const [product, setProduct] = useState({
     name: "",
-    barcode: "",
+    sku: "",
     quantity: 0,
     price: 0,
+    sellingPrice: 0,
     category: "No Category",
     minStock: 0,
   });
@@ -15,9 +16,11 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
     if (editingProduct) {
       setProduct({
         name: editingProduct.name || "",
-        barcode: editingProduct.barcode || "",
+        sku: editingProduct.sku || editingProduct.barcode || "",
         quantity: editingProduct.quantity || 0,
         price: editingProduct.price || 0,
+        sellingPrice:
+          editingProduct.sellingPrice ?? editingProduct.pricing?.single ?? 0,
         category: editingProduct.category || categories[0] || "No Category",
         minStock: editingProduct.minStock || 0,
       });
@@ -53,24 +56,34 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
       newErrors.price = "Price cannot be negative";
     }
 
+    if (product.sellingPrice !== "" && product.sellingPrice < 0) {
+      newErrors.sellingPrice = "Selling price cannot be negative";
+    }
+
     if (product.minStock !== "" && product.minStock < 0) {
       newErrors.minStock = "Minimum stock cannot be negative";
     }
 
     if (Object.keys(newErrors).length > 0) return;
 
+    const sellingPrice = Number(product.sellingPrice || 0);
+
     onSave({
       ...product,
       quantity: Number(product.quantity || 0),
       price: Number(product.price || 0),
+      sellingPrice,
       minStock: Number(product.minStock || 0),
+      // Temporary compatibility for Billing until it is migrated to sellingPrice.
+      pricing: { ...editingProduct?.pricing, single: sellingPrice },
     });
 
     setProduct({
       name: "",
-      barcode: "",
+      sku: "",
       quantity: "",
       price: "",
+      sellingPrice: "",
       category: "No Category",
       minStock: "",
       pricing: {
@@ -97,9 +110,9 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
       />
 
       <TextField
-        label="Barcode"
-        name="barcode"
-        value={product.barcode}
+        label="SKU"
+        name="sku"
+        value={product.sku}
         onChange={handleChange}
         fullWidth
         margin="normal"
@@ -116,10 +129,20 @@ const SimpleProductForm = ({ onSave, editingProduct, categories = ["No Category"
       />
 
       <TextField
-        label="Price"
+        label="Purchase Cost"
         name="price"
         type="number"
         value={product.price || ""}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+      />
+
+      <TextField
+        label="Selling Price"
+        name="sellingPrice"
+        type="number"
+        value={product.sellingPrice || ""}
         onChange={handleChange}
         fullWidth
         margin="normal"

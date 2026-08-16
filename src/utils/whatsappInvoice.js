@@ -30,9 +30,11 @@ export const buildWhatsAppInvoiceMessage = (bill, appSettings) => {
     "Items:",
     ...(bill.items || []).map(
       (item, index) =>
-        `${index + 1}. ${item.name} x ${item.qty} - ${formatCurrency(
-          item.total,
-        )}`,
+        `${index + 1}. ${item.name} x ${item.qty}${
+          Number(item.discountPercent || 0) > 0
+            ? ` (${Number(item.discountPercent).toFixed(2)}% item discount)`
+            : ""
+        } - ${formatCurrency(item.total)}`,
     ),
     "",
     `Subtotal: ${formatCurrency(bill.subtotal)}`,

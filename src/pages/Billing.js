@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Box, TextField, Button, Typography } from "@mui/material";
-import { getBestPriceWithBreakdown } from "../utils/pricingUtils";
 import {
   Table,
   TableBody,
@@ -40,24 +39,22 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
   }, [cart, isCartLoaded]);
 
   const selectedProduct = products.find((p) => p.id === selectedId);
-  const isPriced = Number(selectedProduct?.pricing?.single || 0) > 0;
+  const getSellingPrice = (product) =>
+    Number(product?.sellingPrice ?? product?.pricing?.single ?? 0);
+
+  const isPriced = getSellingPrice(selectedProduct) > 0;
   const selectedStock = Number(selectedProduct?.quantity || 0);
 
   // 🔥 calculate price
-  const pricing = selectedProduct?.pricing;
-
-  const preview = useMemo(() => {
-    if (!pricing) return { total: 0, breakdown: "" };
-    return getBestPriceWithBreakdown(qty, pricing);
-  }, [qty, pricing]);
-
+  const unitPrice = getSellingPrice(selectedProduct);
+  const previewTotal = unitPrice * qty;
   const costPerUnit = Number(selectedProduct?.price || 0);
   const totalCost = costPerUnit * qty;
 
   const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
   const totalProfit = cart.reduce((sum, item) => sum + item.profit, 0);
 
-  const profit = preview.total - totalCost;
+  const profit = previewTotal - totalCost;
   const taxAmount = (grandTotal * taxPercent) / 100;
   const discountAmount = (grandTotal * discountPercent) / 100;
 
@@ -77,21 +74,29 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
     return products.filter(
       (p) =>
         p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         p.barcode?.toLowerCase().includes(debouncedSearch.toLowerCase()),
     );
   }, [debouncedSearch, products]);
 
-  const recalcItem = (product, qty) => {
-    const preview = getBestPriceWithBreakdown(qty, product.pricing);
+  const recalcItem = (product, qty, discountPercent = 0) => {
+    const unitPrice = getSellingPrice(product);
+    const subtotal = unitPrice * qty;
+    const discountAmount = (subtotal * Number(discountPercent || 0)) / 100;
     const cost = Number(product.price || 0) * qty;
-    const profit = preview.total - cost;
+    const total = subtotal - discountAmount;
+    const profit = total - cost;
 
     return {
       qty,
-      total: preview.total,
+      unitPrice,
+      subtotal,
+      discountPercent: Number(discountPercent || 0),
+      discountAmount,
+      total,
       cost,
       profit,
-      breakdown: preview.breakdown,
+      breakdown: `${qty} × ${unitPrice}`,
     };
   };
 
@@ -169,7 +174,24 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
 
         return {
           ...item,
-          ...recalcItem(product, safeQty),
+          ...recalcItem(product, safeQty, item.discountPercent),
+        };
+      }),
+    );
+  };
+
+  const updateItemDiscount = (id, discountPercent) => {
+    const safeDiscount = Math.min(100, Math.max(0, Number(discountPercent || 0)));
+
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const product = products.find((p) => p.id === item.productId);
+        if (!product) return item;
+
+        return {
+          ...item,
+          ...recalcItem(product, item.qty, safeDiscount),
         };
       }),
     );
@@ -193,7 +215,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
       discountPercent,
       discountAmount,
       total: finalTotal,
-      profit: totalProfit,
+      profit: totalProfit - discountAmount,
       date: new Date().toISOString(),
 
       // ✅ NEW FIELDS
@@ -264,10 +286,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
         productId: selectedProduct.id,
         name: selectedProduct.name,
         qty,
-        total: preview.total,
-        cost: totalCost,
-        profit,
-        breakdown: preview.breakdown,
+        ...recalcItem(selectedProduct, qty),
       },
     ]);
     setQty(1);
@@ -294,7 +313,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
               {/* Search Input */}
               <TextField
                 fullWidth
-                placeholder="Search by product name, barcode..."
+                placeholder="Search by product name or SKU..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
               />
@@ -367,6 +386,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
                   <TableCell>Product</TableCell>
                   <TableCell align="center">Qty</TableCell>
                   <TableCell align="center">Unit Price</TableCell>
+                  <TableCell align="center">Item Discount (%)</TableCell>
                   <TableCell align="center">Total</TableCell>
                   <TableCell align="center">Profit</TableCell>
                   <TableCell align="center">Action</TableCell>
@@ -377,7 +397,7 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
               <TableBody>
                 {cart.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       No items in cart
                     </TableCell>
                   </TableRow>
@@ -402,10 +422,23 @@ const Billing = ({ products, setProducts, bills, setBills, settings }) => {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        ₹{Math.round(item.total / item.qty)}
+                        ₹{Number(item.unitPrice ?? item.total / item.qty).toFixed(2)}
                       </TableCell>
-                      <TableCell align="center">₹{item.total}</TableCell>
-                      <TableCell align="center">₹{item.profit}</TableCell>
+                      <TableCell align="center">
+                        <TextField
+                          type="number"
+                          size="small"
+                          value={item.discountPercent || ""}
+                          placeholder="0"
+                          onChange={(e) =>
+                            updateItemDiscount(item.id, e.target.value)
+                          }
+                          inputProps={{ min: 0, max: 100, step: 0.01 }}
+                          sx={{ width: 80 }}
+                        />
+                      </TableCell>
+                      <TableCell align="center">₹{Number(item.total).toFixed(2)}</TableCell>
+                      <TableCell align="center">₹{Number(item.profit).toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <IconButton
                           color="error"

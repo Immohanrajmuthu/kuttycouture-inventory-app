@@ -121,6 +121,7 @@ const Invoice = ({ settings }) => {
                 <TableCell>Item</TableCell>
                 <TableCell align="center">Qty</TableCell>
                 <TableCell align="right">Unit Price</TableCell>
+                <TableCell align="right">Item Discount</TableCell>
                 <TableCell align="right">Amount</TableCell>
               </TableRow>
             </TableHead>
@@ -131,7 +132,12 @@ const Invoice = ({ settings }) => {
                   <TableCell>{item.name}</TableCell>
                   <TableCell align="center">{item.qty}</TableCell>
                   <TableCell align="right">
-                    {formatCurrency(Number(item.total || 0) / Number(item.qty || 1))}
+                    {formatCurrency(item.unitPrice ?? Number(item.total || 0) / Number(item.qty || 1))}
+                  </TableCell>
+                  <TableCell align="right">
+                    {Number(item.discountPercent || 0) > 0
+                      ? `${Number(item.discountPercent).toFixed(2)}% (-${formatCurrency(item.discountAmount)})`
+                      : "-"}
                   </TableCell>
                   <TableCell align="right">{formatCurrency(item.total)}</TableCell>
                 </TableRow>

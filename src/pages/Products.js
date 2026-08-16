@@ -6,13 +6,7 @@ import Typography from "@mui/material/Typography";
 import { useNavigate } from "react-router-dom";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
 import AddIcon from "@mui/icons-material/Add";
-import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import { exportProductsToPDF } from "../utils/exportPDF";
 
@@ -21,9 +15,6 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [updatedRowId, setUpdatedRowId] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [openPricing, setOpenPricing] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [singlePrice, setSinglePrice] = useState("");
   const categories = [
     "All",
     ...new Set(products.map((p) => p.category || "No Category")),
@@ -31,6 +22,7 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
   const filteredProducts = products.filter((p) => {
     const searchMatch =
       p.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(searchText.toLowerCase()) ||
       p.barcode?.toLowerCase().includes(searchText.toLowerCase()) ||
       p.category?.toLowerCase().includes(searchText.toLowerCase());
 
@@ -49,30 +41,16 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
     }
   };
 
-  const handleSavePricing = () => {
-    if (!selectedProduct) return;
-
-    const updatedProducts = products.map((p) => {
-      if (p.id !== selectedProduct.id) return p;
-
-      return {
-        ...p,
-        pricing: {
-          ...p.pricing,
-          single: Number(singlePrice),
-        },
-      };
-    });
-
-    setProducts(updatedProducts);
-    setOpenPricing(false);
-  };
-
   const navigate = useNavigate();
 
   const columns = [
     { field: "name", headerName: "Product", flex: 1 },
-    { field: "barcode", headerName: "Barcode", flex: 1 },
+    {
+      field: "sku",
+      headerName: "SKU",
+      flex: 1,
+      valueGetter: (value, row) => row.sku || row.barcode || "-",
+    },
     { field: "category", headerName: "Category", flex: 1 },
 
     {
@@ -89,6 +67,17 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
       renderCell: (params) => {
         const price = Number(params.row?.price ?? 0);
         return `₹${price}`;
+      },
+    },
+    {
+      field: "sellingPrice",
+      headerName: "Selling Price",
+      width: 120,
+      renderCell: (params) => {
+        const sellingPrice = Number(
+          params.row?.sellingPrice ?? params.row?.pricing?.single ?? 0,
+        );
+        return `${sellingPrice}`;
       },
     },
     {
@@ -115,16 +104,11 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
       width: 150,
       renderCell: (params) => {
         const p = params.row;
-        const hasPricing = Number(p?.pricing?.single || 0) > 0;
+        const hasPricing = Number(p?.sellingPrice ?? p?.pricing?.single ?? 0) > 0;
 
         return (
           <Box
-            title={hasPricing ? "Edit Price" : "Set Price"}
-            onClick={() => {
-              setSelectedProduct(p);
-              setSinglePrice(p?.pricing?.single || "");
-              setOpenPricing(true);
-            }}
+            title={hasPricing ? "Selling price set" : "Selling price not set"}
             sx={{
               px: 1,
               py: 0.5,
@@ -247,23 +231,6 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
             Add Product
           </Button>
 
-          {/* Pricing */}
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<PriceCheckIcon />}
-            onClick={() => navigate("/pricing")}
-            sx={{
-              textTransform: "none",
-              fontWeight: 500,
-              px: 1.5,
-              backgroundColor: "#2e7d32",
-              "&:hover": { backgroundColor: "#1b5e20" },
-            }}
-          >
-            Pricing
-          </Button>
-
           <Button
             variant="outlined"
             size="small"
@@ -317,35 +284,6 @@ const Products = ({ products, setProducts, setEditingProduct, settings }) => {
             params.id === updatedRowId ? "highlight-row" : ""
           }
         />
-        <Dialog
-          open={openPricing}
-          onClose={() => setOpenPricing(false)}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle>Set Price - {selectedProduct?.name}</DialogTitle>
-
-          <DialogContent>
-            <TextField
-              label="Single Price"
-              type="number"
-              fullWidth
-              autoFocus
-              margin="normal"
-              value={singlePrice}
-              placeholder={`Current: ₹${selectedProduct?.pricing?.single || 0}`} // TODO
-              onChange={(e) => setSinglePrice(e.target.value)}
-            />
-          </DialogContent>
-
-          <DialogActions>
-            <Button onClick={() => setOpenPricing(false)}>Cancel</Button>
-
-            <Button variant="contained" onClick={handleSavePricing}>
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
         <Snackbar
           open={openSnackbar}
           autoHideDuration={2000}
