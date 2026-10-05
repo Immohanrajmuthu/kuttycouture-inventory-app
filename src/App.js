@@ -4,6 +4,7 @@ import { Typography } from "@mui/material";
 
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { normalizeAppSettings } from "./utils/appSettings";
+import { importWebsiteCatalog } from "./utils/importWebsiteCatalog";
 
 // Lazy load all page components for better startup performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -47,9 +48,10 @@ function App() {
     }
 
     const data = await window.electronAPI.getData();
-    setProducts(data.products || []);
+    const importedCatalog = importWebsiteCatalog(data);
+    setProducts(importedCatalog.products);
     setBills(data.bills || []);
-    const loadedSettings = normalizeAppSettings(data.settings);
+    const loadedSettings = importedCatalog.settings;
     setSettings(loadedSettings);
     setIsFirstLaunch(!loadedSettings.hasCompletedSetup);
 
