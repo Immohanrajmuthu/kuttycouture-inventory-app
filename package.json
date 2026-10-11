@@ -23,6 +23,9 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
+    "redesign": "npm run build && node ./node_modules/electron/cli.js ./desktop/redesign-main.cjs",
+    "test:foundation": "node --test desktop/tests/*.test.cjs",
+    "test:desktop": "npm run build && node ./node_modules/electron/cli.js ./desktop/redesign-main.cjs --smoke-test",
     "clean": "rimraf dist",
     "electron": "node ./node_modules/electron/cli.js ./electron.js",
     "build": "react-scripts build",

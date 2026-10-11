@@ -4,6 +4,22 @@ A Windows desktop app for a small retail shop to manage products, record sales, 
 
 This guide describes the current implementation and is the starting point for new contributors.
 
+The planned Project-Butterfly rebuild is documented separately in the [version-one design specification](docs/REDESIGN_SPEC.md) and [phased implementation plan](docs/IMPLEMENTATION_PLAN.md). Those documents describe agreed future behavior, not features already implemented in this checkout.
+
+### Try the redesign workspace
+
+With Node 24 and dependencies installed, run `npm run redesign`. This builds and opens the new two-section app using a separate SQLite store at `.local/redesign/`. It does **not** read the existing app's data or its custom-storage pointer. The first launch imports the bundled 93-product website catalog into this isolated store with zero stock, purchase costs, and selling prices. Reopening preserves edits and does not repeat the import. Billing and website publishing remain future workflows.
+
+Products supports search/category/status filters, grouped size rows, editing/archiving, shared colors, automatic SKUs, manual prices, and a per-size markup/margin calculator. The four clothing SKUs map to 100089–100092; the next new SKU starts at 100093. Enquiry-only sizes stay inactive and missing color information is flagged for review. Low stock uses `quantity <= minStock`, with an editable default threshold of zero. See [catalog and pricing decisions](docs/decisions/002-catalog-pricing.md).
+
+Receive stock supports one product and all its active sizes with a review before saving. Positive quantities add stock and update purchase cost; zero rows and selling prices stay unchanged. Adjust stock records an actual count and reason, preserving costs/prices. Stock history shows the latest saved entry first, with automatic timestamps, source, quantity change, stock after, and received purchase cost. Changes across available/unavailable boundaries are marked pending for the future website publisher. See [stock and history decisions](docs/decisions/003-stock-history.md).
+
+The foundation includes Light/Dark/System appearance, remembered navigation, editable business details, and manual backup/restore. Schema-three backups include catalog, prices, quantities/history, identities, SKU sequence, operation IDs, pending availability, and preferences. Restore validates stock-history consistency and creates a safety copy first. Older schema-one backups restore settings only; schema-two catalog backups restore the earlier zero-stock catalog and clear subsequent stock history. The review shows this scope before replacement. These are not legacy inventory backups; daily backup scheduling arrives in a later phase.
+
+Run `npm run test:foundation` for storage, catalog, pricing, stock, and recovery checks; `npm test -- --watchAll=false --runInBand` for renderer and legacy catalog tests; and `npm run test:desktop` for a hidden Electron smoke test and screenshots in a separate `.local/smoke-*` directory. The smoke test imports the catalog, saves a calculated price, receives two sizes, corrects a count, and verifies persistence and latest-first history after reload. It does not use the regular redesign store. See the [storage decision](docs/decisions/001-foundation-storage.md) for architecture and limitations.
+
+The remaining README sections describe the **legacy application**. Its existing launch and packaging commands are unchanged while the rebuild progresses.
+
 ## Contents
 
 - [Run the app](#run-the-app)

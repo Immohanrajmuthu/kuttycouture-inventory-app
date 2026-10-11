@@ -1,0 +1,19 @@
+.kc-stock-search { display:grid; gap:6px; font-size:13px; }
+.kc-stock-search input { width:100%; }
+.kc-stock-results { list-style:none; padding:0; margin:8px 0 0; }
+.kc-stock-results button { width:100%; text-align:left; margin-bottom:5px; }
+.kc-stock-results small { display:block; color:var(--kc-muted); }
+.kc-stock-results [aria-selected=true] button { background:var(--kc-soft); border-color:var(--kc-accent); }
+.kc-stock-product { margin-top:24px; }
+.kc-stock-totals { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; margin:22px 0; }
+.kc-stock-totals strong { font-weight:600; }
+.kc-stock-review { background:var(--kc-panel); }
+.kc-stock-review h2:focus { outline:none; }
+.kc-stock-reason { margin-top:20px!important; overflow-wrap:anywhere; }
+.kc-history-caption { display:flex; justify-content:space-between; gap:12px; margin:16px 0; color:var(--kc-muted); font-size:12px; }
+.kc-history-table { min-width:820px!important; }
+.kc-history-table time { font-size:12px; }
+.kc-history-table td:nth-child(5) { min-width:170px; overflow-wrap:anywhere; }
+.kc-history-table td:last-child { min-width:140px; }
+.kc-stock-review .kc-size-table { min-width:580px; }
+.kc-panel .kc-size-table small { display:block; color:var(--kc-muted); font-size:11px; }
