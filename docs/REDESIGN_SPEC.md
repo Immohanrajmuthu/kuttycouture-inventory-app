@@ -43,7 +43,7 @@ Interactive conversation previews establish the direction for products, the prod
 - Colors are shared across sizes. Color is selected during billing but does not have its own stock balance or price.
 - Use stable internal IDs for products and size entries. SKU and size labels are not database identity.
 - Archive products rather than deleting history. Inactive sizes/products are unavailable for new sales.
-- Photos are managed on the website only. The desktop app does not store product photos.
+- Optional desktop reference thumbnail: one per product, shared across sizes/colors. Add, replace, or remove in the editor; display in catalog and future billing search. Store a compressed local copy and include it in backup/restore. This supersedes the original no-desktop-photos decision. Website photos remain independently managed and are not overwritten by thumbnails.
 - Categories initially include accessories and clothing.
 
 ### SKU allocation

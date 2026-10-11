@@ -6,7 +6,7 @@ const { validateProduct, importCatalog, prepareProduct, IMPORT_ID } = require('.
 const { applyStock, validateCommand, validateInventory } = require('./inventory.cjs');
 
 const SCHEMA_VERSION = 3;
-const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
+const MAX_BACKUP_BYTES = 100 * 1024 * 1024;
 const SCREENS = ['products', 'receive', 'adjust', 'history', 'publish', 'new-bill', 'bills', 'settings'];
 const DEFAULT_PREFERENCES = Object.freeze({
   theme: 'system', lastScreen: 'products', shopName: 'Kutty Couture',
@@ -270,7 +270,8 @@ class FoundationStore {
       if (previous && previous.revision !== draft.revision) throw new Error('This product has changed. Reopen it before saving.');
       const catalog = this.getCatalog();
       if (!previous && catalog.state.nextSku >= 999999999) throw new Error('SKU range exhausted.');
-      const product = prepareProduct(draft, previous, String(catalog.state.nextSku));
+      const hasHistory = previous && this.db.prepare('SELECT 1 FROM stock_operations WHERE productId=? LIMIT 1').get(previous.id);
+      const product = prepareProduct(draft, previous, String(catalog.state.nextSku), !hasHistory);
       this.db.prepare('INSERT INTO products VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET value=excluded.value').run(product.id, product.sku, JSON.stringify(product));
       if (!previous) this.db.prepare('UPDATE catalog_state SET value=? WHERE id=1').run(JSON.stringify({ ...catalog.state, nextSku: catalog.state.nextSku + 1 }));
       this.db.prepare('INSERT INTO catalog_operations VALUES (?, ?, ?)').run(command.operationId, requestHash, product.id);

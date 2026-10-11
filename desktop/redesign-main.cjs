@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -56,6 +56,19 @@ if (!app.requestSingleInstanceLock()) {
       responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'"] },
     }));
     register('foundation:load', () => ({ preferences: store.getPreferences(), storagePath: directory, schemaVersion: 3, catalog: store.getCatalog(), inventory: store.getStockView() }));
+    register('catalog:choose-thumbnail', async () => {
+      const result = await dialog.showOpenDialog(window, { title: 'Choose product thumbnail', properties: ['openFile'], filters: [{ name: 'Product images', extensions: ['jpg', 'jpeg', 'png'] }] });
+      if (result.canceled || !result.filePaths[0]) return null;
+      const file = result.filePaths[0];
+      if (fs.statSync(file).size > 15 * 1024 * 1024) throw new Error('Choose an image smaller than 15 MB.');
+      const original = nativeImage.createFromBuffer(fs.readFileSync(file));
+      if (original.isEmpty()) throw new Error('This image could not be opened. Choose a JPEG or PNG image.');
+      const { width, height } = original.getSize();
+      const image = Math.max(width, height) > 320 ? original.resize(width >= height ? { width: 320 } : { height: 320 }) : original;
+      const bytes = image.toJPEG(80);
+      if (bytes.length > 80000) throw new Error('This image is too detailed for a thumbnail. Choose a smaller image.');
+      return `data:image/jpeg;base64,${bytes.toString('base64')}`;
+    });
     register('catalog:save', command => store.saveProduct(command));
     register('catalog:load', () => store.getCatalog());
     register('stock:receive', command => store.receiveStock(command));

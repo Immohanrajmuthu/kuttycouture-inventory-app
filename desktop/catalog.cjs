@@ -10,7 +10,9 @@ function keys(value, allowed, label) {
   if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(key => !allowed.includes(key)) || allowed.some(key => !Object.hasOwn(value, key))) throw new Error(`Invalid ${label} structure.`);
 }
 function validateProduct(p) {
-  keys(p, ['id','sku','legacySkus','websiteId','name','category','productType','description','hasSizes','colors','variants','archived','review','sourceSizes','revision','createdAt','updatedAt'], 'product');
+  const { thumbnail, ...record } = p;
+  if (thumbnail !== undefined && thumbnail !== null && (typeof thumbnail !== 'string' || thumbnail.length > 110000 || !/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(thumbnail))) throw new Error('Invalid product thumbnail. Choose a JPEG or PNG image again.');
+  keys(record, ['id','sku','legacySkus','websiteId','name','category','productType','description','hasSizes','colors','variants','archived','review','sourceSizes','revision','createdAt','updatedAt'], 'product');
   for (const key of ['id', 'sku', 'name', 'category']) text(p[key], key);
   if (!/^\d{6,9}$/.test(p.sku)) throw new Error('Invalid SKU.');
   if (!['accessories', 'clothing'].includes(p.category)) throw new Error('Choose accessories or clothing.');
@@ -77,7 +79,7 @@ function importCatalog(source) {
     report: { importedAt: now, count: products.length, accessories: products.filter(p => p.category === 'accessories').length, clothing: products.filter(p => p.category === 'clothing').length, missingColors: products.filter(p => p.review.includes('colors')).length, ambiguousSizes: products.filter(p => p.review.includes('sizes')).length, skuMap: SKU_MAP } };
 }
 
-function prepareProduct(draft, previous, sku) {
+function prepareProduct(draft, previous, sku, allowStructureChange = false) {
   const now = new Date().toISOString();
   const p = { ...draft, id: previous?.id || randomUUID(), sku: previous?.sku || sku,
     legacySkus: previous?.legacySkus || [], websiteId: previous?.websiteId || '', sourceSizes: previous?.sourceSizes || [],
@@ -85,15 +87,16 @@ function prepareProduct(draft, previous, sku) {
   validateProduct(p);
   if (previous) {
     if (draft.sku !== previous.sku || draft.websiteId !== previous.websiteId || JSON.stringify(draft.legacySkus) !== JSON.stringify(previous.legacySkus)) throw new Error('Product identity cannot be changed.');
-    if (previous.hasSizes !== p.hasSizes) throw new Error('Existing product structure cannot be changed. Add or deactivate size entries instead.');
-    for (const v of previous.variants) {
+    const changedStructure = previous.hasSizes !== p.hasSizes;
+    if (changedStructure && (!allowStructureChange || previous.variants.some(v => v.stock !== 0))) throw new Error('Inventory structure is locked because this product has stock or history.');
+    for (const v of changedStructure ? [] : previous.variants) {
       const next = p.variants.find(item => item.id === v.id);
       if (!next) throw new Error('Keep existing sizes; deactivate them instead of removing them.');
       if (next.stock !== v.stock) throw new Error('Use a stock operation to change quantities.');
     }
     if (previous.colors.some(color => !p.colors.some(next => next.id === color.id))) throw new Error('Keep existing colors; deactivate them instead of removing them.');
   }
-  for (const v of p.variants) if (!previous?.variants.some(item => item.id === v.id) && v.stock !== 0) throw new Error('New sizes must start with zero stock.');
+  for (const v of p.variants) if ((previous?.hasSizes !== p.hasSizes || !previous?.variants.some(item => item.id === v.id)) && v.stock !== 0) throw new Error('New sizes must start with zero stock.');
   if (p.variants.some(v => v.active && /enquiry/i.test(v.label))) throw new Error('Replace enquiry labels with actual sizes before activating them.');
   return p;
 }

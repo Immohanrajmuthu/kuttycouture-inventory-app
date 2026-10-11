@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import FoundationApp from './FoundationApp';
+import sourceCatalog from '../data/websiteCatalog.json';
 
 let container, root, catalog;
 const preferences = { theme: 'system', lastScreen: 'products', shopName: 'Kutty Couture', place: 'Chennai', phone: '8610971628', website: 'kuttycouture.in', instagram: '@kuttycouture.in', footer: 'Thank you!' };
@@ -79,4 +80,76 @@ test('failed save retains decimal inputs and unsaved navigation can be cancelled
   expect(container.querySelector('.kc-product-editor')).not.toBeNull();
   await save();
   expect(window.foundationAPI.saveProduct.mock.calls[0][0].operationId).toBe(window.foundationAPI.saveProduct.mock.calls[1][0].operationId);
+});
+
+test('fresh catalog includes unresolved sizes in Needs price and keeps review independent', async () => {
+  const template = catalog.products[0];
+  catalog.products = sourceCatalog.map(item => ({ ...template, id: item.id, sku: String(item.sku), name: item.name,
+    review: [...(!item.color ? ['colors'] : []), ...((item.sizes || []).some(s => /enquiry/i.test(s)) ? ['sizes'] : [])],
+    variants: [{ ...template.variants[0], active: !(item.sizes || []).some(s => /enquiry/i.test(s)) }] }));
+  await act(async () => root.render(<FoundationApp />));
+  const count = () => container.querySelector('.kc-filter-row > span').textContent;
+  expect(count()).toBe('93 products');
+  await click('Needs price');
+  expect(count()).toBe('93 products');
+  await click('Needs review');
+  expect(count()).toBe('63 products');
+});
+
+test('review action opens editor and saved confirmation clears review without clearing pricing need', async () => {
+  catalog.products[0].review = ['colors'];
+  await act(async () => root.render(<FoundationApp />));
+  await click('Needs review');
+  await click('Review choices');
+  expect(container.querySelector('.kc-product-editor')).not.toBeNull();
+  await act(async () => labeled('I have reviewed color choices').click());
+  await save();
+  expect(window.foundationAPI.saveProduct.mock.calls[0][0].product.review).toEqual([]);
+  expect(container.querySelector('.kc-filter-row > span').textContent).toBe('0 products');
+  await click('Needs price');
+  expect(container.querySelector('.kc-filter-row > span').textContent).toBe('1 products');
+});
+
+test('fresh product structure changes only after confirmation and saves a zero-stock entry', async () => {
+  await act(async () => root.render(<FoundationApp />));
+  await click('Frock');
+  await input(labeled('Inventory structure'), 'single');
+  expect(labeled('Inventory structure').value).toBe('sizes');
+  window.confirm.mockReturnValue(true);
+  await input(labeled('Inventory structure'), 'single');
+  expect(container.querySelector('[aria-label="Size label 1"]').value).toBe('One size');
+  await save();
+  const saved = window.foundationAPI.saveProduct.mock.calls[0][0].product;
+  expect(saved.hasSizes).toBe(false);
+  expect(saved.variants).toHaveLength(1);
+  expect(saved.variants[0].stock).toBe(0);
+});
+
+test('zero-stock product with history shows plain structure text instead of a disabled dropdown', async () => {
+  window.foundationAPI.load.mockResolvedValue({ preferences, catalog, inventory: { movements: [{ productId: 'p1' }] } });
+  await act(async () => root.render(<FoundationApp />));
+  await click('Frock');
+  expect([...container.querySelectorAll('label')].some(el => el.textContent.startsWith('Inventory structure'))).toBe(false);
+  expect(container.textContent).toContain('Locked because this product has stock or stock history');
+});
+
+test('thumbnail picker cancel preserves draft; add, replace and remove are saved only with product', async () => {
+  const photo = 'data:image/jpeg;base64,/9j/2Q==';
+  window.foundationAPI.chooseThumbnail = jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(photo).mockResolvedValueOnce(null);
+  await act(async () => root.render(<FoundationApp />));
+  await click('Frock');
+  await click('Add image');
+  expect(container.querySelector('.kc-thumbnail-preview')).toBeNull();
+  await click('Add image');
+  expect(container.querySelector('.kc-thumbnail-preview').getAttribute('src')).toBe(photo);
+  expect(window.foundationAPI.saveProduct).not.toHaveBeenCalled();
+  await click('Replace image');
+  expect(container.querySelector('.kc-thumbnail-preview').getAttribute('src')).toBe(photo);
+  await save();
+  expect(container.querySelector('.kc-product-thumbnail').getAttribute('src')).toBe(photo);
+  await click('Frock');
+  await click('Remove image');
+  await save();
+  expect(window.foundationAPI.saveProduct.mock.calls[1][0].product.thumbnail).toBeNull();
+  expect(container.querySelector('.kc-product-thumbnail')).toBeNull();
 });

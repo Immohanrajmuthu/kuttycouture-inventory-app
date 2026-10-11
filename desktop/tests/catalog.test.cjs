@@ -133,3 +133,37 @@ test('schema-one stores upgrade with a safety backup; old settings-only restore 
   assert.equal(store.getPreferences().theme, 'dark');
   assert.equal(store.getCatalog().products.length, 93);
 });
+
+test('fresh structure can change both ways but stock history locks it even at zero balance', t => {
+  const store = fixture(t);
+  let p = store.getCatalog().products.find(p => p.sku === '100089');
+  const convert = p => ({ ...p, hasSizes: !p.hasSizes, variants: [{ ...p.variants[0], id: randomUUID(), label: p.hasSizes ? 'One size' : 'S', stock: 0 }] });
+  p = save(store, convert(p)).products.find(item => item.id === p.id);
+  assert.equal(p.hasSizes, false);
+  p = save(store, convert(p)).products.find(item => item.id === p.id);
+  assert.equal(p.hasSizes, true);
+  store.receiveStock({ operationId: randomUUID(), productId: p.id, expectedRevision: p.revision, lines: [{ variantId: p.variants[0].id, quantity: 1, purchaseCostPaise: 100 }] });
+  p = store.getCatalog().products.find(item => item.id === p.id);
+  assert.throws(() => save(store, convert(p)), /locked/);
+  store.adjustStock({ operationId: randomUUID(), productId: p.id, expectedRevision: p.revision, variantId: p.variants[0].id, actualQuantity: 0, reason: 'Count correction', note: '' });
+  p = store.getCatalog().products.find(item => item.id === p.id);
+  assert.throws(() => save(store, convert(p)), /locked/);
+  assert.doesNotThrow(() => parseBackup(store.exportBackup()));
+});
+
+test('optional thumbnails persist, travel with backups and can be removed; unsafe sources are rejected', t => {
+  const store = fixture(t);
+  let p = store.getCatalog().products[0];
+  p.thumbnail = 'data:image/jpeg;base64,/9j/2Q==';
+  save(store, p);
+  const backup = store.exportBackup();
+  assert.equal(parseBackup(backup).catalog.products[0].thumbnail, p.thumbnail);
+  p = store.getCatalog().products[0]; p.thumbnail = null; save(store, p);
+  assert.equal(store.getCatalog().products[0].thumbnail, null);
+  store.restoreBackup(backup);
+  assert.equal(store.getCatalog().products[0].thumbnail, 'data:image/jpeg;base64,/9j/2Q==');
+  for (const thumbnail of ['https://example.com/photo.jpg', 'data:image/svg+xml;base64,AAAA', 'data:image/jpeg;base64,/9j/' + 'A'.repeat(110000)]) {
+    p = store.getCatalog().products[0]; p.thumbnail = thumbnail;
+    assert.throws(() => save(store, p), /thumbnail/);
+  }
+});
