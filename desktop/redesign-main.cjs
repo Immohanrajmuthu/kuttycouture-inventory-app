@@ -55,7 +55,7 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({
       responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'"] },
     }));
-    register('foundation:load', () => ({ preferences: store.getPreferences(), storagePath: directory, schemaVersion: 3, catalog: store.getCatalog(), inventory: store.getStockView() }));
+    register('foundation:load', () => ({ preferences: store.getPreferences(), storagePath: directory, schemaVersion: 4, billing: store.getBilling(), catalog: store.getCatalog(), inventory: store.getStockView() }));
     register('catalog:choose-thumbnail', async () => {
       const result = await dialog.showOpenDialog(window, { title: 'Choose product thumbnail', properties: ['openFile'], filters: [{ name: 'Product images', extensions: ['jpg', 'jpeg', 'png'] }] });
       if (result.canceled || !result.filePaths[0]) return null;
@@ -71,6 +71,11 @@ if (!app.requestSingleInstanceLock()) {
     });
     register('catalog:save', command => store.saveProduct(command));
     register('catalog:load', () => store.getCatalog());
+    register('billing:load', () => store.billingResult());
+    register('billing:draft', command => store.saveBillingDraft(command));
+    register('billing:save', command => store.saveInvoice(command));
+    register('billing:pay', command => store.payInvoice(command));
+    register('billing:cancel', command => store.cancelInvoice(command));
     register('stock:receive', command => store.receiveStock(command));
     register('stock:adjust', command => store.adjustStock(command));
     register('stock:load', () => ({ catalog: store.getCatalog(), inventory: store.getStockView() }));
@@ -92,7 +97,7 @@ if (!app.requestSingleInstanceLock()) {
       const text = fs.readFileSync(result.filePaths[0], 'utf8');
       const payload = parseBackup(text);
       restorePreview = { text, token: randomUUID() };
-      return { token: restorePreview.token, createdAt: payload.createdAt, shopName: payload.preferences.shopName, fileName: path.basename(result.filePaths[0]), schemaVersion: payload.schemaVersion, productCount: payload.catalog?.products.length ?? null, movementCount: payload.schemaVersion === 1 ? null : payload.inventory?.movements.length || 0 };
+      return { token: restorePreview.token, createdAt: payload.createdAt, shopName: payload.preferences.shopName, fileName: path.basename(result.filePaths[0]), schemaVersion: payload.schemaVersion, billCount: payload.billing?.bills.length ?? 0, productCount: payload.catalog?.products.length ?? null, movementCount: payload.schemaVersion === 1 ? null : payload.inventory?.movements.length || 0 };
     });
     register('foundation:restore', token => {
       if (!restorePreview || typeof token !== 'string' || restorePreview.token !== token) throw new Error('Review the backup again before restoring.');

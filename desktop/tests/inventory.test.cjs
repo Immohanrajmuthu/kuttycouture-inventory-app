@@ -119,7 +119,7 @@ test('stock backup restores matching history and balances and rejects tampered c
 
 test('schema-two restore clears subsequent stock history to that backup point', t => {
   const store = fixture(t);
-  const payload = JSON.parse(store.exportBackup()).payload; payload.schemaVersion = 2; delete payload.inventory;
+  const payload = JSON.parse(store.exportBackup()).payload; payload.schemaVersion = 2; delete payload.inventory; delete payload.billing;
   store.receiveStock(receive(product(store)));
   store.restoreBackup(envelope(payload));
   assert.equal(product(store).variants[0].stock, 0);
@@ -130,7 +130,7 @@ test('schema-two restore clears subsequent stock history to that backup point', 
 test('schema-two upgrade creates a catalog safety backup before adding stock tables', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'kutty-stock-upgrade-'));
   let store = new FoundationStore(directory); store.initializeCatalog(source);
-  store.db.exec('DROP TABLE stock_movements; DROP TABLE stock_operations; DROP TABLE pending_availability; PRAGMA user_version=2;');
+  store.db.exec('DROP TABLE billing_state; DROP TABLE stock_movements; DROP TABLE stock_operations; DROP TABLE pending_availability; PRAGMA user_version=2;');
   store.close();
   store = new FoundationStore(directory);
   t.after(() => { store.close(); fs.rmSync(directory, { recursive: true, force: true }); });

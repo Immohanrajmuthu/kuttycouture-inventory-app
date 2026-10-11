@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './foundation.css';
 import CatalogPage from './CatalogPage';
 import StockPage from './StockPage';
+import BillingPage from './BillingPage';
 
 const GROUPS = [
   { label: 'Products & Pricing', items: [['products', 'Products'], ['receive', 'Receive stock'], ['adjust', 'Adjust stock'], ['history', 'Stock history'], ['publish', 'Website publishing']] },
@@ -14,7 +15,7 @@ const SCREENS = {
   history: ['Stock history', 'Every change, with the latest entry first.', 'No stock movements yet', 'Received stock, sales, cancellations, and corrections will appear here with their source and resulting quantity.'],
   publish: ['Website publishing', 'Review public catalog changes before publishing.', 'Your website connection comes later', 'Publish names, sizes, colors, and availability. Photos stay on the website; quantities, prices, and costs stay private.'],
   'new-bill': ['New bill', 'Find a product by SKU or name and build a bill.', 'Billing follows the catalog and stock', 'The billing phase will add size and color selection, paid or unpaid bills, and a review before saving.'],
-  bills: ['Bills', 'Find invoices, record payment, and print or share.', 'No bills in this workspace', 'Saved invoices will appear here. A4 printing and PDF sharing are planned for this version.'],
+  bills: ['Bills', 'Find invoices, record payments, and manage unpaid bills.', 'No bills in this workspace', 'Saved invoices will appear here. A4 printing and PDF sharing are planned for this version.'],
   settings: ['Settings', 'Your business details, appearance, and recovery tools.'],
 };
 const BUSINESS_FIELDS = [['shopName', 'Business name'], ['place', 'Place'], ['phone', 'Phone number'], ['website', 'Website'], ['instagram', 'Instagram'], ['footer', 'Invoice footer']];
@@ -35,12 +36,12 @@ function Settings({ preferences, update, storagePath, busy, run, onRestored }) {
       </form>
     </section>
     <section className="kc-panel" aria-labelledby="backup-heading">
-      <h2 id="backup-heading">Backup & recovery</h2><p>Back up your catalog, prices, stock quantities and history, SKU sequence, business details, and preferences. Billing will be included when that workflow is added.</p>
+      <h2 id="backup-heading">Backup & recovery</h2><p>Back up your catalog, prices, stock quantities and history, SKU sequence, business details, and preferences. Includes product thumbnails, invoices, payment and cancellation history, invoice sequence, and your saved billing draft.</p>
       <div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.createBackup(); return result ? `Backup saved: ${result.path}` : 'Backup cancelled.'; })}>Back up now</button><button disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.previewRestore(); setPreview(result); return result ? 'Backup is ready for review.' : 'Restore cancelled.'; })}>Restore backup…</button></div>
-      {preview && <section className="kc-restore" aria-labelledby="restore-heading"><h3 ref={reviewHeading} tabIndex={-1} id="restore-heading">Review before restoring</h3><dl><dt>File</dt><dd>{preview.fileName}</dd><dt>Created</dt><dd>{new Date(preview.createdAt).toLocaleString()}</dd><dt>Business</dt><dd>{preview.shopName}</dd><dt>Catalog</dt><dd>{preview.productCount == null ? 'Settings-only backup; catalog and stock stay unchanged' : `${preview.productCount} products`}</dd>{preview.movementCount != null && <><dt>History</dt><dd>{preview.movementCount} stock entries</dd></>}</dl><p>{preview.productCount == null ? 'This replaces settings only.' : 'This replaces catalog, stock history, and settings in this redesign workspace.'} A safety backup is created first.</p><div className="kc-actions"><button disabled={busy} onClick={() => setPreview(null)}>Keep current settings</button><button className="kc-primary" disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.restoreBackup(preview.token); setPreview(null); onRestored(result); return `Backup restored. Safety backup: ${result.safetyPath}`; })}>{preview.productCount == null ? 'Restore these settings' : 'Restore this backup'}</button></div></section>}
+      {preview && <section className="kc-restore" aria-labelledby="restore-heading"><h3 ref={reviewHeading} tabIndex={-1} id="restore-heading">Review before restoring</h3><dl><dt>File</dt><dd>{preview.fileName}</dd><dt>Created</dt><dd>{new Date(preview.createdAt).toLocaleString()}</dd><dt>Business</dt><dd>{preview.shopName}</dd><dt>Catalog</dt><dd>{preview.productCount == null ? 'Settings-only backup; catalog and stock stay unchanged' : `${preview.productCount} products`}</dd>{preview.productCount != null && <><dt>Invoices</dt><dd>{preview.billCount || 0} bills</dd></>}{preview.movementCount != null && <><dt>History</dt><dd>{preview.movementCount} stock entries</dd></>}</dl><p>{preview.productCount == null ? 'This replaces settings only.' : 'This replaces catalog, stock history, billing and settings in this redesign workspace. Older catalog backups clear bills and drafts.'} A safety backup is created first.</p><div className="kc-actions"><button disabled={busy} onClick={() => setPreview(null)}>Keep current settings</button><button className="kc-primary" disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.restoreBackup(preview.token); setPreview(null); onRestored(result); return `Backup restored. Safety backup: ${result.safetyPath}`; })}>{preview.productCount == null ? 'Restore these settings' : 'Restore this backup'}</button></div></section>}
       <p className="kc-small">Automatic daily backups and 30-day retention are scheduled for a later phase.</p>
     </section>
-    <section className="kc-panel"><h2>Workspace</h2><p>This development workspace uses the bundled website catalog and stays separate from your existing inventory app. No live stock or bills have been imported.</p><dl><dt>Storage</dt><dd className="kc-path">{storagePath}</dd><dt>Database</dt><dd>SQLite · Schema version 3</dd></dl></section>
+    <section className="kc-panel"><h2>Workspace</h2><p>This development workspace uses the bundled website catalog and stays separate from your existing inventory app. No live stock or bills have been imported.</p><dl><dt>Storage</dt><dd className="kc-path">{storagePath}</dd><dt>Database</dt><dd>SQLite · Schema version 4</dd></dl></section>
   </>;
 }
 
@@ -49,6 +50,7 @@ export default function FoundationApp() {
   const [storagePath, setStoragePath] = useState('');
   const [catalog, setCatalog] = useState(null);
   const [inventory, setInventory] = useState({ movements: [], pendingAvailabilityCount: 0 });
+  const [billing, setBilling] = useState({ bills: [], draft: null, draftRevision: 0 });
   const [dirty, setDirty] = useState(false);
   const [screen, setScreen] = useState('products');
   const [busy, setBusy] = useState(false);
@@ -66,6 +68,7 @@ export default function FoundationApp() {
       const data = await window.foundationAPI.load();
       setPreferences(data.preferences); setScreen(data.preferences.lastScreen); setStoragePath(data.storagePath);
       setCatalog(data.catalog || null);
+      setBilling(data.billing || { bills: [], draft: null, draftRevision: 0 });
       setInventory(data.inventory || { movements: [], pendingAvailabilityCount: 0 });
     } catch (failure) { setError(failure.message); }
     finally { setLoading(false); }
@@ -104,7 +107,7 @@ export default function FoundationApp() {
     <div className="kc-layout"><aside className="kc-sidebar"><nav aria-label="Main navigation">{GROUPS.map(group => <div className="kc-nav-group" key={group.label}><h2>{group.label}</h2>{group.items.map(([id, label]) => <button key={id} disabled={busy} aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>{label}</button>)}</div>)}<div className="kc-nav-group kc-settings-nav"><button disabled={busy} aria-current={screen === 'settings' ? 'page' : undefined} onClick={() => navigate('settings')}>Settings</button></div></nav><div className="kc-workspace-note"><span className="kc-status-dot" aria-hidden="true" />Local development workspace<small>Your live data stays separate.</small></div></aside>
       <main id="workspace-main" className="kc-main" tabIndex={-1}><div className="kc-page-heading"><div><p className="kc-eyebrow">{screen === 'settings' ? 'Your workspace' : ['new-bill', 'bills'].includes(screen) ? 'Billing' : 'Products & Pricing'}</p><h1 ref={heading} tabIndex={-1}>{SCREENS[screen][0]}</h1><p>{SCREENS[screen][1]}</p></div><span className="kc-tag">Development workspace</span></div>
         {error && <div className="kc-notice kc-error" role="alert">{error}</div>}{message && <div className="kc-notice" role="status">{message}</div>}
-        {screen === 'products' ? <CatalogPage inventory={inventory} catalog={catalog} setCatalog={setCatalog} busy={busy} run={run} dirty={dirty} onDirty={setDirty} /> : ['receive', 'adjust', 'history'].includes(screen) ? <StockPage key={screen} screen={screen} catalog={catalog} inventory={inventory} onResult={result => { setCatalog(result.catalog); setInventory(result.inventory); }} busy={busy} run={run} dirty={dirty} onDirty={setDirty} /> : screen === 'settings' ? <Settings preferences={preferences} update={update} storagePath={storagePath} busy={busy} run={run} onRestored={result => { setPreferences(result.preferences); setScreen(result.preferences.lastScreen); if (result.catalog) setCatalog(result.catalog); if (result.inventory) setInventory(result.inventory); }} /> : <>
+        {screen === 'products' ? <CatalogPage inventory={inventory} catalog={catalog} setCatalog={setCatalog} busy={busy} run={run} dirty={dirty} onDirty={setDirty} /> : ['receive', 'adjust', 'history'].includes(screen) ? <StockPage key={screen} screen={screen} catalog={catalog} inventory={inventory} onResult={result => { setCatalog(result.catalog); setInventory(result.inventory); }} busy={busy} run={run} dirty={dirty} onDirty={setDirty} /> : ['new-bill', 'bills'].includes(screen) ? <div className="kc-billing"><BillingPage key={screen} screen={screen} catalog={catalog} billing={billing} busy={busy} run={run} onDirty={setDirty} onResult={result => { setCatalog(result.catalog); setInventory(result.inventory); setBilling(result.billing); }} /></div> : screen === 'settings' ? <Settings preferences={preferences} update={update} storagePath={storagePath} busy={busy} run={run} onRestored={result => { setPreferences(result.preferences); setScreen(result.preferences.lastScreen); if (result.catalog) setCatalog(result.catalog); if (result.inventory) setInventory(result.inventory); if (result.billing) setBilling(result.billing); }} /> : <>
           <section className="kc-empty"><span className="kc-empty-label">{screen === 'products' ? 'CATALOG' : screen === 'new-bill' || screen === 'bills' ? 'BILLING' : 'WORKFLOW'}</span><h2>{SCREENS[screen][2]}</h2><p>{SCREENS[screen][3]}</p><button disabled={busy} onClick={() => navigate('settings')}>Set up business details</button></section>
           <div className="kc-roadmap"><span>Built now</span><p>Products, pricing, stock receiving and corrections, history, and backup recovery.</p><span>Next</span><p>Billing, unpaid bills, and invoice history.</p></div>
         </>}

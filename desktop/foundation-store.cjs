@@ -5,7 +5,8 @@ const path = require('node:path');
 const { validateProduct, importCatalog, prepareProduct, IMPORT_ID } = require('./catalog.cjs');
 const { applyStock, validateCommand, validateInventory } = require('./inventory.cjs');
 
-const SCHEMA_VERSION = 3;
+const { initialBilling, validateBilling, methods: billingMethods } = require('./billing-store.cjs');
+const SCHEMA_VERSION = 4;
 const MAX_BACKUP_BYTES = 100 * 1024 * 1024;
 const SCREENS = ['products', 'receive', 'adjust', 'history', 'publish', 'new-bill', 'bills', 'settings'];
 const DEFAULT_PREFERENCES = Object.freeze({
@@ -42,12 +43,12 @@ function parseBackup(text) {
   let envelope;
   try { envelope = JSON.parse(text); } catch { throw new Error('This is not a valid JSON backup.'); }
   if (!plainObject(envelope) || envelope.format !== 'kutty-couture-foundation'
-    || !plainObject(envelope.payload) || ![1, 2, SCHEMA_VERSION].includes(envelope.payload.schemaVersion)) {
+    || !plainObject(envelope.payload) || ![1, 2, 3, SCHEMA_VERSION].includes(envelope.payload.schemaVersion)) {
     throw new Error('This backup is not compatible with the foundation workspace.');
   }
   if (envelope.checksum !== checksum(envelope.payload)) throw new Error('Backup integrity check failed.');
   const payload = envelope.payload;
-  const expectedKeys = payload.schemaVersion === 1 ? 'createdAt,preferences,schemaVersion' : payload.schemaVersion === 2 ? 'catalog,createdAt,operations,preferences,schemaVersion' : 'catalog,createdAt,inventory,operations,preferences,schemaVersion';
+  const expectedKeys = payload.schemaVersion === 1 ? 'createdAt,preferences,schemaVersion' : payload.schemaVersion === 2 ? 'catalog,createdAt,operations,preferences,schemaVersion' : payload.schemaVersion === 3 ? 'catalog,createdAt,inventory,operations,preferences,schemaVersion' : 'billing,catalog,createdAt,inventory,operations,preferences,schemaVersion';
   if (Object.keys(payload).sort().join(',') !== expectedKeys
     || typeof payload.createdAt !== 'string' || !Number.isFinite(Date.parse(payload.createdAt))) {
     throw new Error('Invalid backup structure.');
@@ -63,8 +64,10 @@ function parseBackup(text) {
         || !/^[a-f0-9]{64}$/.test(operation.requestHash) || !payload.catalog.products.some(p => p.id === operation.productId)) throw new Error('Invalid operation history.');
       ids.add(operation.id);
     }
-    validateInventory(payload.schemaVersion === 3 ? payload.inventory : { movements: [], operations: [], pendingAvailability: [] }, payload.catalog);
+    validateInventory(payload.schemaVersion >= 3 ? payload.inventory : { movements: [], operations: [], pendingAvailability: [] }, payload.catalog);
   }
+  if (payload.schemaVersion >= 4) validateBilling(payload.billing, payload.inventory, payload.catalog);
+  else if (payload.schemaVersion >= 3 && payload.inventory.operations.some(o => ['Sold', 'Cancelled bill'].includes(o.type))) throw new Error('Billing history requires a billing backup.');
   return payload;
 }
 
@@ -137,9 +140,21 @@ class FoundationStore {
             PRAGMA user_version = 3;`);
         });
       }
+      if (version < 4) {
+        if (version === 3) {
+          const backups = path.join(directory, 'safety-backups'); fs.mkdirSync(backups, { recursive: true });
+          this.writeBackup(path.join(backups, `before-schema-4-${randomUUID()}.json`));
+        }
+        this.transaction(() => {
+          this.db.exec('CREATE TABLE billing_state (id INTEGER PRIMARY KEY CHECK(id=1), value TEXT NOT NULL CHECK(json_valid(value)));');
+          this.db.prepare('INSERT INTO billing_state VALUES (1, ?)').run(JSON.stringify(initialBilling()));
+          this.db.exec('PRAGMA user_version = 4');
+        });
+      }
       validatePreferences(this.getPreferences());
       validateCatalog(this.getCatalog());
       validateInventory(this.getInventory(), this.getCatalog());
+      validateBilling(this.getBilling(), this.getInventory(), this.getCatalog());
     } catch (error) {
       this.db.close();
       throw error;
@@ -179,7 +194,8 @@ class FoundationStore {
       const version = this.db.prepare('PRAGMA user_version').get().user_version;
       return { schemaVersion: version, createdAt: new Date().toISOString(), preferences: this.getPreferences(),
         ...(version >= 2 ? { catalog: this.getCatalog(), operations: this.db.prepare('SELECT * FROM catalog_operations').all().map(row => ({ ...row })) } : {}),
-        ...(version >= 3 ? { inventory: this.getInventory() } : {}) };
+        ...(version >= 3 ? { inventory: this.getInventory() } : {}),
+        ...(version >= 4 ? { billing: this.getBilling() } : {}) };
     });
     const text = JSON.stringify({ format: 'kutty-couture-foundation', payload, checksum: checksum(payload) }, null, 2);
     if (Buffer.byteLength(text) > MAX_BACKUP_BYTES) throw new Error('Backup exceeds the supported size.');
@@ -215,13 +231,18 @@ class FoundationStore {
       this.db.prepare('UPDATE preferences SET value = ? WHERE id = 1').run(JSON.stringify(payload.preferences));
       if (payload.schemaVersion >= 2) {
         const highWater = this.getCatalog().state.nextSku;
+        const oldBilling = this.getBilling();
+        const restoredBilling = payload.schemaVersion >= 4 ? payload.billing : initialBilling();
+        restoredBilling.nextNumber = Math.max(oldBilling.nextNumber, restoredBilling.nextNumber);
+        restoredBilling.draftRevision = Math.max(oldBilling.draftRevision, restoredBilling.draftRevision) + 1;
+        this.putBilling(restoredBilling);
         this.db.exec('DELETE FROM stock_movements; DELETE FROM stock_operations; DELETE FROM pending_availability; DELETE FROM catalog_operations; DELETE FROM products;');
         const insert = this.db.prepare('INSERT INTO products VALUES (?, ?, ?)');
         for (const p of payload.catalog.products) insert.run(p.id, p.sku, JSON.stringify(p));
         this.db.prepare('UPDATE catalog_state SET value = ? WHERE id = 1').run(JSON.stringify({ ...payload.catalog.state, nextSku: Math.max(highWater, payload.catalog.state.nextSku) }));
         const op = this.db.prepare('INSERT INTO catalog_operations VALUES (?, ?, ?)');
         for (const item of payload.operations) op.run(item.id, item.requestHash, item.productId);
-        if (payload.schemaVersion === 3) {
+        if (payload.schemaVersion >= 3) {
           const stockOp = this.db.prepare('INSERT INTO stock_operations VALUES (?, ?, ?, ?, ?)');
           for (const item of payload.inventory.operations) stockOp.run(item.id, item.requestHash, item.productId, item.type, item.recordedAt);
           const movement = this.db.prepare('INSERT INTO stock_movements VALUES (?, ?, ?, ?)');
@@ -231,7 +252,7 @@ class FoundationStore {
         }
       }
     });
-    return { preferences: this.getPreferences(), safetyPath, catalog: this.getCatalog(), inventory: this.getStockView() };
+    return { preferences: this.getPreferences(), safetyPath, catalog: this.getCatalog(), inventory: this.getStockView(), billing: this.getBilling() };
   }
 
   getCatalog() {
@@ -317,5 +338,7 @@ class FoundationStore {
 
   close() { this.db.close(); }
 }
+
+Object.assign(FoundationStore.prototype, billingMethods);
 
 module.exports = { FoundationStore, DEFAULT_PREFERENCES, SCREENS, parseBackup, validatePreferences, developmentDirectory, MAX_BACKUP_BYTES };

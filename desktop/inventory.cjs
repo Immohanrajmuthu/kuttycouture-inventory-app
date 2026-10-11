@@ -73,7 +73,7 @@ function validateInventory(inventory, catalog) {
   for (const op of inventory.operations) {
     fields(op, ['id', 'requestHash', 'productId', 'type', 'recordedAt']);
     if (!validId(op.id) || operations.has(op.id) || !/^[a-f0-9]{64}$/.test(op.requestHash)
-      || !products.has(op.productId) || !['Received', 'Adjustment'].includes(op.type)
+      || !products.has(op.productId) || !['Received', 'Adjustment', 'Sold', 'Cancelled bill'].includes(op.type)
       || typeof op.recordedAt !== 'string' || !Number.isFinite(Date.parse(op.recordedAt))) throw new Error('Invalid stock operation backup.');
     operations.set(op.id, op);
   }
@@ -90,6 +90,8 @@ function validateInventory(inventory, catalog) {
     if (m.type === 'Received') {
       integer(m.purchaseCostPaise, 'Received cost');
       if (m.delta < 0 || m.reason !== 'Stock received') throw new Error('Invalid received stock.');
+    } else if (['Sold', 'Cancelled bill'].includes(m.type)) {
+      if (m.purchaseCostPaise !== null || !/^KC-\d{6,9}$/.test(m.reason) || (m.type === 'Sold' ? m.delta >= 0 : m.delta <= 0)) throw new Error('Invalid bill stock movement.');
     } else if (m.purchaseCostPaise !== null || !REASONS.includes(m.reason)) throw new Error('Invalid adjustment.');
     const key = JSON.stringify([m.productId, m.variantId]);
     if ((balances.get(key) || 0) !== m.before) throw new Error('Stock history has a missing or inconsistent entry.');

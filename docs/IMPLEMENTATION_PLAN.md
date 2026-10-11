@@ -1,10 +1,12 @@
 # Redesign implementation plan
 
-Updated: 6 October 2026. Status: foundation, phase 2 catalog/pricing, and phase 3 stock operations implemented in the isolated development entry point. Billing, publishing, and production cutover remain pending.
+Updated: 11 October 2026. Status: phases 1–4 implemented in the isolated development entry point. Invoice output/sharing, publishing, and production cutover remain pending.
 
-Phase 1 provides the two-section shell, saved theme/navigation/business details, narrow validated IPC, SQLite transactions, and backup/restore. See [storage decision 001](decisions/001-foundation-storage.md). Phase 2 upgrades to schema 2 with restart-safe catalog import, stable product/variant IDs, non-reused SKUs, revision checks, manual prices, and an optional calculator. See [catalog decision 002](decisions/002-catalog-pricing.md). Daily backup scheduling and live migration remain future work. Transaction tests validate persistence behavior, not completed billing behavior.
+Phase 1 provides the two-section shell, saved theme/navigation/business details, narrow validated IPC, SQLite transactions, and backup/restore. See [storage decision 001](decisions/001-foundation-storage.md). Phase 2 upgrades to schema 2 with restart-safe catalog import, stable product/variant IDs, non-reused SKUs, revision checks, manual prices, and an optional calculator. See [catalog decision 002](decisions/002-catalog-pricing.md). Daily backup scheduling and live migration remain future work. Billing now has dedicated lifecycle, crash/rollback, and backup tests.
 
-Phase 3 upgrades to schema 3: reviewed stock receipts and corrections, immutable movements ordered newest-save first, retry-safe commands, availability-change tracking, and stock-aware backup validation. See [stock decision 003](decisions/003-stock-history.md). Sold/cancelled-bill movements will be added in the billing phase; their history filters currently have no generated entries.
+Phase 3 upgrades to schema 3: reviewed stock receipts and corrections, immutable movements ordered newest-save first, retry-safe commands, availability-change tracking, and stock-aware backup validation. See [stock decision 003](decisions/003-stock-history.md). Phase 4 adds Sold/Cancelled bill movements linked to invoices.
+
+Phase 4 upgrades to schema 4 with a single explicitly saved recoverable draft, reviewed paid/unpaid billing, immutable financial snapshots, continuous invoice numbers, payment/cancellation actions, filtered invoice history, and atomic stock updates. See [billing decision 005](decisions/005-billing.md). A4/PDF/WhatsApp output is Phase 5.
 
 The [redesign specification](REDESIGN_SPEC.md) contains the agreed product behavior. This plan proposes the technical structure and delivery checks. Recommendations below are not presented as already approved technology choices.
 
