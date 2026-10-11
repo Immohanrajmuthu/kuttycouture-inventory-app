@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { parseMoney, moneyInput } from './domain/pricing';
 import { prepareBill, validateDraft } from './domain/billing';
 import './billing.css';
+import InvoiceActions from './InvoiceActions';
 
 const money = n => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(n/100);
 const uid = () => window.crypto.randomUUID();
@@ -28,7 +29,7 @@ export function InvoiceDetail({bill,onBack,busy,run,onResult}) {
     {bill.status==='unpaid' && <fieldset disabled={busy}><div className="kc-field-grid"><label>Payment method<select value={mode} onChange={e=>{setMode(e.target.value);setConfirm(null);}}><option value="upi">UPI</option><option value="cash">Cash</option></select></label><label>Cancellation reason<input maxLength={500} value={reason} onChange={e=>{setReason(e.target.value);setConfirm(null);}}/></label></div><div className="kc-actions"><button onClick={()=>choose('pay')}>Mark as paid</button><button disabled={!reason.trim()} onClick={()=>choose('cancel')}>Cancel unpaid bill</button></div>
       {confirm && <div className="kc-notice"><p>{confirm==='pay'?`Record full payment of ${money(bill.totals.totalPaise)} by ${mode.toUpperCase()}? Stock stays unchanged.`:'Cancel this unpaid bill and restore its stock? This cannot be undone.'}</p><button onClick={()=>setConfirm(null)}>Keep bill unchanged</button> <button className="kc-primary" onClick={()=>run(async()=>{const result=await (confirm==='pay'?window.foundationAPI.payInvoice({operationId:op.current,billId:bill.id,paymentMode:mode}):window.foundationAPI.cancelInvoice({operationId:op.current,billId:bill.id,reason}));onResult(result);setConfirm(null);return confirm==='pay'?'Payment recorded.':'Bill cancelled and stock restored.';})}>Confirm {confirm==='pay'?'payment':'cancellation'}</button></div>}
     </fieldset>}
-    <p className="kc-small">A4 printing, PDF and WhatsApp sharing will be added in Phase 5.</p>
+    <InvoiceActions bill={bill} busy={busy} run={run} />
   </section>;
 }
 function NewBill({catalog,billing,busy,run,onResult,onDirty}) {

@@ -1,12 +1,12 @@
 # Redesign implementation plan
 
-Updated: 11 October 2026. Status: phases 1–4 implemented in the isolated development entry point. Invoice output/sharing, publishing, and production cutover remain pending.
+Updated: 11 October 2026. Status: phases 1–5 implemented in the isolated development entry point. Website publishing and production cutover remain pending. Physical-printer verification is a release check.
 
 Phase 1 provides the two-section shell, saved theme/navigation/business details, narrow validated IPC, SQLite transactions, and backup/restore. See [storage decision 001](decisions/001-foundation-storage.md). Phase 2 upgrades to schema 2 with restart-safe catalog import, stable product/variant IDs, non-reused SKUs, revision checks, manual prices, and an optional calculator. See [catalog decision 002](decisions/002-catalog-pricing.md). Daily backup scheduling and live migration remain future work. Billing now has dedicated lifecycle, crash/rollback, and backup tests.
 
 Phase 3 upgrades to schema 3: reviewed stock receipts and corrections, immutable movements ordered newest-save first, retry-safe commands, availability-change tracking, and stock-aware backup validation. See [stock decision 003](decisions/003-stock-history.md). Phase 4 adds Sold/Cancelled bill movements linked to invoices.
 
-Phase 4 upgrades to schema 4 with a single explicitly saved recoverable draft, reviewed paid/unpaid billing, immutable financial snapshots, continuous invoice numbers, payment/cancellation actions, filtered invoice history, and atomic stock updates. See [billing decision 005](decisions/005-billing.md). A4/PDF/WhatsApp output is Phase 5.
+Phase 4 upgrades to schema 4 with a single explicitly saved recoverable draft, reviewed paid/unpaid billing, immutable financial snapshots, continuous invoice numbers, payment/cancellation actions, filtered invoice history, and atomic stock updates. See [billing decision 005](decisions/005-billing.md). Phase 5 adds A4 preview/native printing, PDF export, optional snapshotted business logo, and reviewed manual WhatsApp preparation. See [invoice output decision 006](decisions/006-invoice-output.md).
 
 The [redesign specification](REDESIGN_SPEC.md) contains the agreed product behavior. This plan proposes the technical structure and delivery checks. Recommendations below are not presented as already approved technology choices.
 

@@ -108,3 +108,12 @@ test('multi-product bill and cancellation failures roll back all products togeth
   assert.throws(()=>s.cancelInvoice(command),/write failure/);assert.deepEqual(s.getInventory(),before);assert.equal(s.getBilling().bills[0].status,'unpaid');assert.equal(product(s).variants[0].stock,3);
   s.db.exec('DROP TRIGGER reject_cancel');s.cancelInvoice(command);assert.equal(product(s).variants[0].stock,5);assert.equal(s.getCatalog().products.find(p=>p.id===other.id).variants[0].stock,3);assert.doesNotThrow(()=>parseBackup(s.exportBackup()));
 });
+
+test('shop logo is snapshotted for new invoices and survives backup without changing historical branding',t=>{
+  const s=fixture(t),logo='data:image/jpeg;base64,/9j/2Q==';
+  s.updatePreferences({logo});save(s);s.updatePreferences({logo:'',shopName:'New name'});
+  const b=s.getBilling().bills[0];assert.equal(b.business.logo,logo);assert.equal(b.business.shopName,'Kutty Couture');
+  const backup=s.exportBackup();assert.equal(parseBackup(backup).billing.bills[0].business.logo,logo);
+  assert.throws(()=>s.updatePreferences({logo:'https://example.com/logo.jpg'}),/logo/);
+  s.restoreBackup(backup);assert.equal(s.getBilling().bills[0].business.logo,logo);
+});

@@ -27,7 +27,7 @@ All money is integer paise. Percentage discounts use basis points and half-up ro
 
 Schema-4 backups include draft, invoices, lifecycle operations and stock links. Validation checks totals, identities/counters, lifecycle state, stock directions, invoice linkage and ledger balances. Older schema-1 backups restore settings only. Schema-2/3 catalog restores clear billing/draft but retain the invoice high-water mark. Safety copies are made first. Thumbnails remain private catalog data; invoice snapshots do not duplicate them.
 
-A4/PDF and prepared WhatsApp messages are Phase 5. Phone validation for WhatsApp sharing will apply there. No tax, partial payments, paid-bill voiding, returns, offers, delivery tracking or multiple-computer sync is introduced.
+A4/PDF and prepared WhatsApp messages are implemented in Phase 5; see decision 006. Recipient validation applies when preparing WhatsApp, and sharing can use a recipient override without editing the saved invoice. No tax, partial payments, paid-bill voiding, returns, offers, delivery tracking or multiple-computer sync is introduced.
 
 ## Verification
 

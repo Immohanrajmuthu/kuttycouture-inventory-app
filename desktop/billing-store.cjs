@@ -23,7 +23,9 @@ function validateBilling(state, inventory, catalog) {
     if (b.status === 'cancelled') { timestamp(b.cancelledAt); if (!b.cancelReason.trim()) throw new Error('Missing cancellation reason.'); }
     else if (b.cancelledAt !== null || b.cancelReason !== '') throw new Error('Invalid cancellation.');
     if (b.draft.paymentStatus === 'paid' && b.status !== 'paid') throw new Error('Paid invoices cannot be cancelled.');
-    fields(b.business,'shopName,place,phone,website,instagram,footer'); Object.values(b.business).forEach(v => text(v));
+    const { logo, ...businessText } = b.business;
+    fields(businessText,'shopName,place,phone,website,instagram,footer'); Object.values(businessText).forEach(v => text(v));
+    if (logo !== undefined && (typeof logo !== 'string' || logo.length > 110000 || (logo !== '' && !/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(logo)))) throw new Error('Invalid invoice logo.');
     if (!Array.isArray(b.lines) || b.lines.length !== b.draft.lines.length) throw new Error('Invalid invoice lines.');
     b.lines.forEach((l,i) => {
       fields(l,'productId,variantId,colorId,productName,sku,size,color,quantity,unitPricePaise,purchaseCostPaise,unitExpensesPaise');
@@ -114,7 +116,7 @@ const methods = {
         if(state.nextNumber>=999999999 || state.bills.length>=10000) throw new Error('Invoice capacity reached.');
         const prepared=prepareBill(command.draft,this.getCatalog().products), preferences=this.getPreferences();
         const number=state.nextNumber++;
-        bill={id:randomUUID(),number,invoiceNumber:`KC-${String(number).padStart(6,'0')}`,savedAt:now,paidAt:command.draft.paymentStatus==='paid'?now:null,cancelledAt:null,cancelReason:'',status:command.draft.paymentStatus,paymentMode:command.draft.paymentStatus==='paid'?command.draft.paymentMode:null,draft:JSON.parse(JSON.stringify(command.draft)),...prepared,business:Object.fromEntries(['shopName','place','phone','website','instagram','footer'].map(k=>[k,preferences[k]])),saleOperations:[],cancelOperations:[]};
+        bill={id:randomUUID(),number,invoiceNumber:`KC-${String(number).padStart(6,'0')}`,savedAt:now,paidAt:command.draft.paymentStatus==='paid'?now:null,cancelledAt:null,cancelReason:'',status:command.draft.paymentStatus,paymentMode:command.draft.paymentStatus==='paid'?command.draft.paymentMode:null,draft:JSON.parse(JSON.stringify(command.draft)),...prepared,business:{...Object.fromEntries(['shopName','place','phone','website','instagram','footer'].map(k=>[k,preferences[k]])), ...(preferences.logo ? {logo:preferences.logo} : {})},saleOperations:[],cancelOperations:[]};
         bill.saleOperations=this.changeInvoiceStock(bill,'Sold',now); state.bills.unshift(bill); state.draft=null; state.draftRevision++;
       } else {
         bill=state.bills.find(b=>b.id===command.billId);

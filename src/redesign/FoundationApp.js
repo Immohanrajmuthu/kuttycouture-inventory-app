@@ -29,12 +29,13 @@ function Settings({ preferences, update, storagePath, busy, run, onRestored }) {
   useEffect(() => { if (preview) reviewHeading.current?.focus(); }, [preview]);
   return <>
     <section className="kc-panel" aria-labelledby="business-heading">
-      <div className="kc-section-title"><div><h2 id="business-heading">Business details</h2><p>For your future A4 invoices and PDFs.</p></div><span className="kc-tag">Saved on this laptop</span></div>
+      <div className="kc-section-title"><div><h2 id="business-heading">Business details</h2><p>Used on new invoices and PDFs. Saved invoices keep their original business details.</p></div><span className="kc-tag">Saved on this laptop</span></div>
       <form onSubmit={event => { event.preventDefault(); const values = Object.fromEntries(BUSINESS_FIELDS.map(([key]) => [key, form[key].trim()])); run(() => update(values), 'Business details saved.'); }}>
         <div className="kc-field-grid">{BUSINESS_FIELDS.map(([key, label]) => <label key={key}>{label}<input required={key === 'shopName'} maxLength={200} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}</div>
         <div className="kc-actions"><button className="kc-primary" disabled={busy}>Save business details</button></div>
       </form>
     </section>
+    <section className="kc-panel"><h2>Invoice logo</h2><p>Optional. Appears on new invoices; existing invoices keep their saved logo.</p>{preferences.logo && <img className="kc-thumbnail-preview" src={preferences.logo} alt="Shop logo" />}<div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { const logo = await window.foundationAPI.chooseThumbnail(); if (logo) { await update({ logo }); return 'Logo saved for future invoices.'; } return 'Logo selection cancelled.'; })}>{preferences.logo ? 'Replace logo' : 'Add logo'}</button>{preferences.logo && <button disabled={busy} onClick={() => run(() => update({ logo: '' }), 'Logo removed for future invoices.')}>Remove logo</button>}</div></section>
     <section className="kc-panel" aria-labelledby="backup-heading">
       <h2 id="backup-heading">Backup & recovery</h2><p>Back up your catalog, prices, stock quantities and history, SKU sequence, business details, and preferences. Includes product thumbnails, invoices, payment and cancellation history, invoice sequence, and your saved billing draft.</p>
       <div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.createBackup(); return result ? `Backup saved: ${result.path}` : 'Backup cancelled.'; })}>Back up now</button><button disabled={busy} onClick={() => run(async () => { const result = await window.foundationAPI.previewRestore(); setPreview(result); return result ? 'Backup is ready for review.' : 'Restore cancelled.'; })}>Restore backup…</button></div>

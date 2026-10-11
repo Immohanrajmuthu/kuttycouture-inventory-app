@@ -17,3 +17,9 @@
 .kc-billing input[role=combobox] { width:100%; }
 .kc-billing .kc-field-grid select { min-width:0; width:100%; }
 .kc-billing .kc-tag { text-transform:capitalize; }
+
+.kc-invoice-actions { border-top:1px solid var(--kc-border); margin-top:24px; padding-top:20px; }
+.kc-invoice-preview,.kc-share-review { margin-top:20px; }
+.kc-invoice-preview iframe { width:100%; height:720px; border:1px solid var(--kc-border); border-radius:6px; background:white; }
+.kc-share-review input { display:block; width:100%; max-width:360px; margin:8px 0; }
+.kc-share-review textarea { margin:8px 0 14px; }

@@ -53,7 +53,7 @@ if (!app.requestSingleInstanceLock()) {
     store.initializeCatalog(require('../src/data/websiteCatalog.json'));
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({
-      responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'"] },
+      responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'self' about:"] },
     }));
     register('foundation:load', () => ({ preferences: store.getPreferences(), storagePath: directory, schemaVersion: 4, billing: store.getBilling(), catalog: store.getCatalog(), inventory: store.getStockView() }));
     register('catalog:choose-thumbnail', async () => {
@@ -71,6 +71,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     register('catalog:save', command => store.saveProduct(command));
     register('catalog:load', () => store.getCatalog());
+    require('./invoice-output.cjs').registerInvoiceOutput(register, store, () => window);
     register('billing:load', () => store.billingResult());
     register('billing:draft', command => store.saveBillingDraft(command));
     register('billing:save', command => store.saveInvoice(command));

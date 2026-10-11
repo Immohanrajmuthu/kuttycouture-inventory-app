@@ -21,10 +21,14 @@ function plainObject(value) {
 }
 function validatePreferences(value, partial = false) {
   if (!plainObject(value)) throw new Error('Preferences must be an object.');
-  const keys = Object.keys(DEFAULT_PREFERENCES);
+  const keys = [...Object.keys(DEFAULT_PREFERENCES), 'logo'];
   if (Object.keys(value).some(key => !keys.includes(key))) throw new Error('Unknown preference.');
-  if (!partial && keys.some(key => !Object.hasOwn(value, key))) throw new Error('Incomplete preferences.');
+  if (!partial && keys.some(key => key !== 'logo' && !Object.hasOwn(value, key))) throw new Error('Incomplete preferences.');
   for (const [key, entry] of Object.entries(value)) {
+    if (key === 'logo') {
+      if (typeof entry !== 'string' || entry.length > 110000 || (entry !== '' && !/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(entry))) throw new Error('Invalid shop logo.');
+      continue;
+    }
     if (typeof entry !== 'string' || entry.length > 200 || /[\u0000-\u001f]/.test(entry)) {
       throw new Error('Invalid preference value.');
     }
