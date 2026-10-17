@@ -6,6 +6,8 @@ export default function PublishingPage({ busy, run }) {
   const [connection, setConnection] = useState(null);
   const [token, setToken] = useState('');
   const [verification, setVerification] = useState(null);
+  const [review, setReview] = useState(null);
+  const [deployment, setDeployment] = useState(null);
   const products = preview?.payload.products || [];
   const listed = products.filter(product => product.listed);
   const filtered = products.filter(product => `${product.sku} ${product.name}`.toLowerCase().includes(query.trim().toLowerCase()));
@@ -30,13 +32,30 @@ export default function PublishingPage({ busy, run }) {
       <h2>Review your website catalog</h2>
       <p>Publish product details, shared colors, sizes, and Available/Unavailable status. Website photos stay on the website.</p>
       <p>Deployment: GitHub main → Netlify → kuttycouture.in.</p>
-      <p className="kc-small">Connection setup is in progress. This preview does not update the website or compare against its live catalog.</p>
+      <p className="kc-small">Local preview works offline. Review website changes compares your saved catalog with GitHub. Publishing starts a Netlify deployment; check deployment to confirm it is live.</p>
+      <div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { setReview(null); const result = await window.foundationAPI.preparePublication(); setReview(result); setPreview(result); return 'Review the changes below before publishing to the live website.'; })}>Review website changes</button>
+      <button disabled={busy} onClick={() => run(async () => { setDeployment(null); setDeployment(await window.foundationAPI.publicationStatus()); })}>Check deployment</button></div>
+      {deployment && <p role="status">{deployment.state === 'live' ? `GitHub's catalog version is live. ${deployment.pendingChanges} product changes remain unpublished.` : deployment.state === 'ready' ? 'Website integration is ready for your first reviewed publication.' : deployment.state === 'waiting' ? 'Waiting for the website deployment to match GitHub. Check again shortly.' : deployment.message}</p>}
+      {deployment?.lastConfirmed && <p className="kc-small">Last confirmed live version: {deployment.lastConfirmed.version.slice(0, 12)} · checked {new Date(deployment.lastConfirmed.checkedAt).toLocaleString()}. {deployment.state === 'unconfirmed' && 'This is a previous check, not confirmation of the current website.'}</p>}
+      {deployment?.historyWarning && <p role="status">{deployment.historyWarning}</p>}
       <button className="kc-primary" disabled={busy} onClick={() => run(async () => {
         const result = await window.foundationAPI.previewPublication();
         setPreview(result);
+        setReview(null);
         return 'Website catalog preview refreshed from saved products.';
       })}>{preview ? 'Refresh preview' : 'Preview website catalog'}</button>
     </section>
+    {review && <section className="kc-panel"><h2>Review before publishing</h2>
+      <p>{review.changes.length} product changes compared with GitHub. {review.firstPublication && 'This is the first app publication and will replace the website catalog with this reviewed snapshot.'}</p>
+      <p>Archived products and products absent from this snapshot will be hidden. Website photos are retained for matching product identities.</p>
+      <ul>{review.changes.map(change => <li key={change.sku}>{change.action}: {change.sku} · {change.name}{change.fields.length > 0 ? ` (${change.fields.join(', ')})` : ''}</li>)}</ul>
+      <div className="kc-actions"><button disabled={busy} onClick={() => setReview(null)}>Cancel review</button><button className="kc-primary" disabled={busy || !review.changes.length} onClick={() => run(async () => {
+        const result = await window.foundationAPI.publishCatalog(review.reviewToken);
+        setReview(null);
+        setDeployment(null);
+        return `Catalog submitted to GitHub. Use Check deployment to confirm it is live.${result.pendingNewChanges ? ' New app changes remain unpublished.' : ''}`;
+      })}>Publish reviewed catalog to website</button></div>
+    </section>}
     {preview && <section className="kc-panel" aria-labelledby="publication-preview-heading">
       <h2 id="publication-preview-heading">Public catalog preview</h2>
       <p>{listed.length} listed · {listed.filter(product => product.available).length} available · {listed.filter(product => !product.available).length} unavailable · {products.length - listed.length} archived</p>

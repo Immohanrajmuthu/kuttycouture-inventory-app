@@ -76,6 +76,10 @@ if (!app.requestSingleInstanceLock()) {
     register('publication:connection', () => credentials.status());
     const publicationConnection = require('./publication-connection.cjs').publicationConnection(credentials);
     register('publication:verify', () => publicationConnection.verify());
+    const publisher = require('./publisher.cjs').publisher({ credentials, products: () => store.getCatalog().products, history: require('./publication-history.cjs').publicationHistory(directory) });
+    register('publication:prepare', () => publisher.prepare());
+    register('publication:publish', token => publisher.publish(token));
+    register('publication:status', () => publisher.status());
     register('publication:save-token', token => credentials.save(token));
     register('publication:remove-token', () => credentials.remove());
     require('./invoice-output.cjs').registerInvoiceOutput(register, store, () => window);

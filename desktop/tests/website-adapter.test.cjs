@@ -1,0 +1,28 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { pathToFileURL } = require('node:url');
+const path = require('node:path');
+const { publicationPreview } = require('../public-catalog.cjs');
+const { importCatalog } = require('../catalog.cjs');
+test('website adapter retains media, hides archives, maps clothing aliases and handles missing photos', async () => {
+  const { applyPublication } = await import(pathToFileURL(path.resolve(__dirname, '../../integration/website/published-catalog.ts')).href);
+  const products = importCatalog(require('../../src/data/websiteCatalog.json')).products;
+  const clothing = products.find(p => p.sku === '100089'); clothing.variants[0].stock = 2;
+  const photos = [{ src: '/existing.webp', alt: 'Existing photo' }];
+  const base = [{ id: clothing.websiteId, images: photos, material: 'Cotton', price: null }];
+  const initial = { format: 'kutty-couture-publication-v1', version: null, payload: null };
+  assert.equal(applyPublication(base, initial), base);
+  products[0].archived = true;
+  const snapshot = publicationPreview(products);
+  const document = { ...initial, version: snapshot.version, payload: snapshot.payload };
+  const result = applyPublication(base, document);
+  assert.equal(result.length, 92);
+  const published = result.find(p => p.sku === 100089);
+  assert.equal(published.images, photos); assert.equal(published.material, 'Cotton');
+  assert.deepEqual(published.legacySkus, ['200000']);
+  assert.equal(published.sizeAvailability[0].available, true);
+  assert.ok(result.every(p => p.price === null && p.images.length > 0));
+  assert.equal(result.find(p => p.sku === 100001).images[0].src, '/product-placeholder.svg');
+  document.payload.products[0].stock = 17;
+  assert.throws(() => applyPublication(base, document), /Unexpected public catalog fields/);
+});

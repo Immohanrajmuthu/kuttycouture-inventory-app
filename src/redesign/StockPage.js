@@ -92,6 +92,6 @@ export default function StockPage({ screen, catalog, inventory, onResult, busy, 
         <div className="kc-actions"><button disabled={busy || (receiving && !rows.length)} className="kc-primary" onClick={reviewEntry}>{receiving ? 'Review stock entry' : 'Review adjustment'}</button></div>
       </>}
     </section>
-    {inventory.pendingAvailabilityCount > 0 && <p className="kc-small">{inventory.pendingAvailabilityCount} product(s) have availability changes waiting for website publishing. The website connection is a later phase.</p>}
+    {inventory.pendingAvailabilityCount > 0 && <p className="kc-small">Stock changes can affect website availability. Open Website publishing to compare your catalog and check the live deployment.</p>}
   </>;
 }

@@ -14,12 +14,18 @@ Each product has its existing website identity (or stable `kc-<sku>` fallback fo
 
 The preview is a saved-data snapshot, not a diff against the live website. It requires an explicit refresh and labels the absence of a connection. Private price/cost edits and positive-to-positive stock changes do not alter its version; public metadata and availability changes do. The existing four clothing edits in the website checkout already match 100089–100092 and were left intact.
 
-## Remaining before Phase 6 is complete
+## Publisher implemented on 17 October 2026
 
-1. Add a validated website adapter for a versioned public JSON file. Match existing listings by website identity, retain website photos and descriptive metadata, support old clothing SKU links, handle new products without photos, and render per-size availability. Remove exact quantities from the shipped website data rather than merely hiding them in the UI.
-2. Repository/branch read verification is implemented in the main process. Verify the real saved connection from the app; complete write-path validation with publication. Never return raw remote error bodies or credential-bearing errors to logs or UI.
-3. Compare public snapshots with the deployed version, show a reviewed diff, and submit only the reviewed snapshot. GitHub file SHA guards concurrent updates. On an uncertain response, read the remote file before retrying to avoid duplicate commits.
-4. Distinguish submitted-to-GitHub from deployed-to-Netlify. Verify the live public version before reporting publication success. Later catalog changes must remain pending relative to the acknowledged snapshot.
-5. Demonstrate staging deployment, retained images, unavailable/available boundaries, offline failure/retry, and a sale during publication. No live catalog publication has occurred during this implementation.
+The app now has Review website changes, explicit Publish reviewed catalog to website, and Check deployment. Main retains the reviewed snapshot and a 15-minute token. A changed app snapshot or remote file requires another review. GitHub file SHA checks prevent overwrites; retry reads the remote version before sending another commit. A sale during submission stays pending relative to the live snapshot. Preview and submission compare against GitHub; deployment status compares against the live public JSON. Neither a successful commit nor an offline cached confirmation is reported as a current live deployment.
 
-The connection fields and local preview are not evidence of completed synchronization. Phase 6 remains open.
+Only the fixed repository, main branch, and public/catalog-publication.json path can be written. Tokens never go to the website host. Requests reject redirects and use bounded response sizes, timeouts, and sanitized errors. The public file is limited to 900 KB. Public-only last-confirmed version and timestamp are saved in publication-status.json outside database backups; this advisory cache is reconstructed from live checks and does not alter catalog or stock data. Existing stock availability markers are retained as historical hints; authoritative pending changes are computed against the live catalog, including metadata edits and changes after restoration.
+
+The website adapter is applied locally to the website develop checkout. It retains images by identity, handles missing photos, supports legacy SKU routes, removes exact quantities, keeps prices null, and shows per-size availability. The initial null publication preserves the current listing set until the first explicit publication. See [integration and release instructions](../../integration/website/README.md).
+
+## Remaining release evidence
+
+- Review/merge the eight website integration files to main and confirm the initial Netlify deployment.
+- Verify the owner's real token and Contents write permission through the first reviewed publication.
+- Demonstrate an actual staging/deployed update, retained photos, offline retry, and pending edits during deployment. Local mock tests do not establish live synchronization.
+
+No catalog or source-code deployment was performed during implementation. Phase 6 remains open until end-to-end deployment evidence is collected.

@@ -24,3 +24,27 @@ test('preview remains explicit, refreshes saved data, and clearly labels unavail
     expect(container.textContent).not.toContain('All listed products are currently unavailable');
   } finally { await act(async () => root.unmount()); container.remove(); delete window.foundationAPI; }
 });
+
+test('publishing requires a separate reviewed action and never claims a submitted version is live', async () => {
+  global.IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container); const messages = [];
+  window.foundationAPI = {
+    preparePublication: jest.fn(async () => ({ payload: { products: [] }, review: [], reviewToken: 'reviewed', firstPublication: true, changes: [{ sku: '100000', name: 'Necklace', action: 'Remove', fields: [] }] })),
+    publishCatalog: jest.fn(async () => ({ state: 'submitted', pendingNewChanges: true })),
+    publicationStatus: jest.fn(async () => ({ state: 'live', pendingChanges: 1 })),
+  };
+  try {
+    await act(async () => root.render(<PublishingPage busy={false} run={async action => { messages.push(await action()); }} />));
+    const click = async label => act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === label).click());
+    await click('Review website changes');
+    expect(window.foundationAPI.publishCatalog).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Remove: 100000');
+    await click('Publish reviewed catalog to website');
+    expect(window.foundationAPI.publishCatalog).toHaveBeenCalledWith('reviewed');
+    expect(messages.join(' ')).toContain('New app changes remain unpublished');
+    expect(container.textContent).not.toContain("GitHub's catalog version is live");
+    await click('Check deployment');
+    expect(container.textContent).toContain('1 product changes remain unpublished');
+  } finally { await act(async () => root.unmount()); container.remove(); delete window.foundationAPI; }
+});

@@ -1,6 +1,6 @@
 # Redesign implementation plan
 
-Updated: 11 October 2026. Status: phases 1–5 implemented in the isolated development entry point. Phase 6 has a public catalog preview and encrypted token storage; authenticated publication, website integration, and live deployment verification remain pending, as does production cutover. See [publication decision 007](decisions/007-website-publication.md). Physical-printer verification is a release check.
+Updated: 17 October 2026. Status: phases 1–5 implemented in the isolated development entry point. Phase 6 has public preview, encrypted token storage, reviewed GitHub publishing/retry and live version checks. The website adapter is applied locally; deployment and actual end-to-end verification remain pending, as does production cutover. See [publication decision 007](decisions/007-website-publication.md). Physical-printer verification is a release check.
 
 Phase 1 provides the two-section shell, saved theme/navigation/business details, narrow validated IPC, SQLite transactions, and backup/restore. See [storage decision 001](decisions/001-foundation-storage.md). Phase 2 upgrades to schema 2 with restart-safe catalog import, stable product/variant IDs, non-reused SKUs, revision checks, manual prices, and an optional calculator. See [catalog decision 002](decisions/002-catalog-pricing.md). Daily backup scheduling and live migration remain future work. Billing now has dedicated lifecycle, crash/rollback, and backup tests.
 
