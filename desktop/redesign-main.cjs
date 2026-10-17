@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, session, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, nativeImage, safeStorage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -71,6 +71,13 @@ if (!app.requestSingleInstanceLock()) {
     });
     register('catalog:save', command => store.saveProduct(command));
     register('catalog:load', () => store.getCatalog());
+    register('publication:preview', () => require('./public-catalog.cjs').publicationPreview(store.getCatalog().products));
+    const credentials = require('./publication-credentials.cjs').publicationCredentials(directory, safeStorage);
+    register('publication:connection', () => credentials.status());
+    const publicationConnection = require('./publication-connection.cjs').publicationConnection(credentials);
+    register('publication:verify', () => publicationConnection.verify());
+    register('publication:save-token', token => credentials.save(token));
+    register('publication:remove-token', () => credentials.remove());
     require('./invoice-output.cjs').registerInvoiceOutput(register, store, () => window);
     register('billing:load', () => store.billingResult());
     register('billing:draft', command => store.saveBillingDraft(command));

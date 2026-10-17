@@ -176,6 +176,15 @@ module.exports = async function smokeCheck(window, directory) {
   if(!shareText.includes('KC-000002') || shareText.includes('profit') || shareText.includes('Purchase cost')) throw new Error('WhatsApp summary invalid.');
   await screenshot('whatsapp-review.png');
   await require('./invoice-smoke.cjs')(window,directory);
+  await click('Website publishing');
+  await waitFor("document.body.textContent.includes('Review your website catalog') && !document.querySelector('.kc-theme select').disabled");
+  await press('Preview website catalog');
+  await waitFor("document.body.textContent.includes('Public catalog preview') && !document.querySelector('.kc-theme select').disabled");
+  const publication = await evaluate('window.foundationAPI.previewPublication()');
+  if (publication.payload.products.length !== 93 || publication.payload.products.some(p => Object.hasOwn(p, 'stock'))) throw new Error('Public catalog preview is invalid.');
+  await press('Check saved connection');
+  await waitFor("document.body.textContent.includes('No token saved.') && !document.querySelector('.kc-theme select').disabled");
+  await screenshot('website-preview.png');
   window.setSize(760, 700);
   await new Promise(resolve => setTimeout(resolve, 100));
   const overflow = await evaluate('document.documentElement.scrollWidth > window.innerWidth');
