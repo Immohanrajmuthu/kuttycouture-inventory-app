@@ -32,6 +32,29 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); delete window.foundationAPI; });
 
+test('saved prices remain visible when the only size is inactive, without activating it', async () => {
+  const product = catalog.products[0]; product.sku = '100059';
+  Object.assign(product.variants[0], { active: false, label: 'Available on enquiry', purchaseCostPaise: 17000, sellingPricePaise: 29900 });
+  await act(async () => root.render(<FoundationApp />));
+  const cells = container.querySelector('.kc-catalog-table tbody tr').querySelectorAll('td');
+  expect(cells[3].textContent).toContain('₹170.00');
+  expect(cells[4].textContent).toContain('₹299.00');
+  expect(cells[4].textContent).toContain('Inactive entries');
+  expect(cells[5].textContent).toBe('No active sizes');
+  expect(product.variants[0].active).toBe(false);
+  expect(window.foundationAPI.saveProduct).not.toHaveBeenCalled();
+});
+
+test('inactive prices do not distort the range when active sizes exist', async () => {
+  const product = catalog.products[0];
+  Object.assign(product.variants[0], { purchaseCostPaise: 17000, sellingPricePaise: 29900 });
+  product.variants.push({ ...product.variants[0], id: 'retired', label: 'Retired', active: false, purchaseCostPaise: 100, sellingPricePaise: 99900 });
+  await act(async () => root.render(<FoundationApp />));
+  const cells = container.querySelector('.kc-catalog-table tbody tr').querySelectorAll('td');
+  expect(cells[3].textContent).toBe('₹170.00');
+  expect(cells[4].textContent).toBe('₹299.00');
+});
+
 test('calculator applies selling price and expenses without changing purchase cost, then saves integer paise', async () => {
   await act(async () => root.render(<FoundationApp />));
   await click('Frock');

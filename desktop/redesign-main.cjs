@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, session, nativeImage, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, safeStorage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -57,17 +57,11 @@ if (!app.requestSingleInstanceLock()) {
     }));
     register('foundation:load', () => ({ preferences: store.getPreferences(), storagePath: directory, schemaVersion: 4, billing: store.getBilling(), catalog: store.getCatalog(), inventory: store.getStockView() }));
     register('catalog:choose-thumbnail', async () => {
-      const result = await dialog.showOpenDialog(window, { title: 'Choose product thumbnail', properties: ['openFile'], filters: [{ name: 'Product images', extensions: ['jpg', 'jpeg', 'png'] }] });
+      const result = await dialog.showOpenDialog(window, { title: 'Choose product thumbnail', properties: ['openFile'], filters: [{ name: 'Product images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }] });
       if (result.canceled || !result.filePaths[0]) return null;
       const file = result.filePaths[0];
       if (fs.statSync(file).size > 15 * 1024 * 1024) throw new Error('Choose an image smaller than 15 MB.');
-      const original = nativeImage.createFromBuffer(fs.readFileSync(file));
-      if (original.isEmpty()) throw new Error('This image could not be opened. Choose a JPEG or PNG image.');
-      const { width, height } = original.getSize();
-      const image = Math.max(width, height) > 320 ? original.resize(width >= height ? { width: 320 } : { height: 320 }) : original;
-      const bytes = image.toJPEG(80);
-      if (bytes.length > 80000) throw new Error('This image is too detailed for a thumbnail. Choose a smaller image.');
-      return `data:image/jpeg;base64,${bytes.toString('base64')}`;
+      return require('./product-thumbnail.cjs').productThumbnail(fs.readFileSync(file));
     });
     register('catalog:save', command => store.saveProduct(command));
     register('catalog:load', () => store.getCatalog());
@@ -78,7 +72,7 @@ if (!app.requestSingleInstanceLock()) {
     register('publication:verify', () => publicationConnection.verify());
     const publisher = require('./publisher.cjs').publisher({ credentials, products: () => store.getCatalog().products, history: require('./publication-history.cjs').publicationHistory(directory) });
     register('publication:prepare', () => publisher.prepare());
-    register('publication:publish', token => publisher.publish(token));
+    register('publication:publish', (token, confirmation) => publisher.publish(token, confirmation));
     register('publication:status', () => publisher.status());
     register('publication:save-token', token => credentials.save(token));
     register('publication:remove-token', () => credentials.remove());

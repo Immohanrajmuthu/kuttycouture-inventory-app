@@ -27,7 +27,7 @@ test('reviewed publication sends only public data and distinguishes submitted fr
   assert.equal((await f.service.status()).state, 'ready');
   assert.equal(review.changes.length, 93); assert.equal(review.firstPublication, true);
   await assert.rejects(f.service.publish('unknown'), /Review website changes/);
-  const submitted = await f.service.publish(review.reviewToken);
+  const submitted = await f.service.publish(review.reviewToken, true);
   assert.equal(submitted.state, 'submitted'); assert.equal(f.puts(), 1);
   assert.equal((await f.service.status()).state, 'waiting');
   f.deploy(); const status = await f.service.status();
@@ -37,19 +37,33 @@ test('reviewed publication sends only public data and distinguishes submitted fr
 });
 test('uncertain write retry reads GitHub and never duplicates a received commit', async () => {
   const f = fixture(); const review = await f.service.prepare(); f.fault();
-  await assert.rejects(f.service.publish(review.reviewToken), /Connection interrupted/);
-  await f.service.publish(review.reviewToken);
+  await assert.rejects(f.service.publish(review.reviewToken, true), /Connection interrupted/);
+  await f.service.publish(review.reviewToken, true);
   assert.equal(f.puts(), 1);
+});
+
+test('first publication rejects missing or nonboolean acknowledgement before any write; later reviews do not require it', async () => {
+  const f = fixture(); const review = await f.service.prepare();
+  for (const confirmation of [undefined, false, 'true', 1]) {
+    await assert.rejects(f.service.publish(review.reviewToken, confirmation), /Confirm that the first publication replaces website availability/);
+    assert.equal(f.puts(), 0);
+  }
+  await f.service.publish(review.reviewToken, true);
+  f.products[0].name += ' renamed';
+  const next = await f.service.prepare();
+  assert.equal(next.firstPublication, false);
+  await f.service.publish(next.reviewToken);
+  assert.equal(f.puts(), 2);
 });
 test('stale app or remote changes require a new review; changes during submission remain pending', async () => {
   const f = fixture(); let review = await f.service.prepare();
   f.products[0].name += ' changed';
-  await assert.rejects(f.service.publish(review.reviewToken), /Products changed/);
+  await assert.rejects(f.service.publish(review.reviewToken, true), /Products changed/);
   review = await f.service.prepare(); f.concurrent();
-  await assert.rejects(f.service.publish(review.reviewToken), /website changed/);
+  await assert.rejects(f.service.publish(review.reviewToken, true), /website changed/);
   review = await f.service.prepare();
   f.during(() => { f.products[0].variants[0].stock = 1; });
-  assert.equal((await f.service.publish(review.reviewToken)).pendingNewChanges, true);
+  assert.equal((await f.service.publish(review.reviewToken, true)).pendingNewChanges, true);
   f.deploy(); assert.equal((await f.service.status()).pendingChanges, 1);
 });
 test('missing website integration cannot create a catalog file or publish', async () => {

@@ -7,6 +7,7 @@ export default function PublishingPage({ busy, run }) {
   const [token, setToken] = useState('');
   const [verification, setVerification] = useState(null);
   const [review, setReview] = useState(null);
+  const [confirmReplacement, setConfirmReplacement] = useState(false);
   const [deployment, setDeployment] = useState(null);
   const products = preview?.payload.products || [];
   const listed = products.filter(product => product.listed);
@@ -33,7 +34,7 @@ export default function PublishingPage({ busy, run }) {
       <p>Publish product details, shared colors, sizes, and Available/Unavailable status. Website photos stay on the website.</p>
       <p>Deployment: GitHub main → Netlify → kuttycouture.in.</p>
       <p className="kc-small">Local preview works offline. Review website changes compares your saved catalog with GitHub. Publishing starts a Netlify deployment; check deployment to confirm it is live.</p>
-      <div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { setReview(null); const result = await window.foundationAPI.preparePublication(); setReview(result); setPreview(result); return 'Review the changes below before publishing to the live website.'; })}>Review website changes</button>
+      <div className="kc-actions"><button disabled={busy} onClick={() => run(async () => { setReview(null); setConfirmReplacement(false); const result = await window.foundationAPI.preparePublication(); setReview(result); setPreview(result); return 'Review the changes below before publishing to the live website.'; })}>Review website changes</button>
       <button disabled={busy} onClick={() => run(async () => { setDeployment(null); setDeployment(await window.foundationAPI.publicationStatus()); })}>Check deployment</button></div>
       {deployment && <p role="status">{deployment.state === 'live' ? `GitHub's catalog version is live. ${deployment.pendingChanges} product changes remain unpublished.` : deployment.state === 'ready' ? 'Website integration is ready for your first reviewed publication.' : deployment.state === 'waiting' ? 'Waiting for the website deployment to match GitHub. Check again shortly.' : deployment.message}</p>}
       {deployment?.lastConfirmed && <p className="kc-small">Last confirmed live version: {deployment.lastConfirmed.version.slice(0, 12)} · checked {new Date(deployment.lastConfirmed.checkedAt).toLocaleString()}. {deployment.state === 'unconfirmed' && 'This is a previous check, not confirmation of the current website.'}</p>}
@@ -42,16 +43,25 @@ export default function PublishingPage({ busy, run }) {
         const result = await window.foundationAPI.previewPublication();
         setPreview(result);
         setReview(null);
+        setConfirmReplacement(false);
         return 'Website catalog preview refreshed from saved products.';
       })}>{preview ? 'Refresh preview' : 'Preview website catalog'}</button>
     </section>
     {review && <section className="kc-panel"><h2>Review before publishing</h2>
       <p>{review.changes.length} product changes compared with GitHub. {review.firstPublication && 'This is the first app publication and will replace the website catalog with this reviewed snapshot.'}</p>
       <p>Archived products and products absent from this snapshot will be hidden. Website photos are retained for matching product identities.</p>
+      {review.firstPublication && <div className="kc-notice" role="alert">
+        <h3>First publication replaces website availability</h3>
+        <p>Your website may already have correct availability. Publishing this snapshot will overwrite it with the app's stock-based availability. Products with zero stock will become Unavailable, even if currently Available on the website.</p>
+        <p>This snapshot will show {review.payload.products.filter(p => p.listed && p.available).length} products as Available and {review.payload.products.filter(p => p.listed && !p.available).length} as Unavailable. These are the resulting totals, not a comparison with the current website.</p>
+        <p>If product review or physical stock entry is unfinished, cancel and publish later.</p>
+        <label><input type="checkbox" checked={confirmReplacement} disabled={busy} onChange={event => setConfirmReplacement(event.target.checked)} /> I have reviewed this snapshot and want to replace the website's availability with the app's stock availability.</label>
+      </div>}
       <ul>{review.changes.map(change => <li key={change.sku}>{change.action}: {change.sku} · {change.name}{change.fields.length > 0 ? ` (${change.fields.join(', ')})` : ''}</li>)}</ul>
-      <div className="kc-actions"><button disabled={busy} onClick={() => setReview(null)}>Cancel review</button><button className="kc-primary" disabled={busy || !review.changes.length} onClick={() => run(async () => {
-        const result = await window.foundationAPI.publishCatalog(review.reviewToken);
+      <div className="kc-actions"><button disabled={busy} onClick={() => { setReview(null); setConfirmReplacement(false); }}>Cancel review</button><button className="kc-primary" disabled={busy || !review.changes.length || (review.firstPublication && !confirmReplacement)} onClick={() => run(async () => {
+        const result = await window.foundationAPI.publishCatalog(review.reviewToken, confirmReplacement);
         setReview(null);
+        setConfirmReplacement(false);
         setDeployment(null);
         return `Catalog submitted to GitHub. Use Check deployment to confirm it is live.${result.pendingNewChanges ? ' New app changes remain unpublished.' : ''}`;
       })}>Publish reviewed catalog to website</button></div>

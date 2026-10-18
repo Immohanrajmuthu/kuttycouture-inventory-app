@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('foundationAPI', {
   publicationConnection: () => ipcRenderer.invoke('publication:connection'),
   verifyPublicationConnection: () => ipcRenderer.invoke('publication:verify'),
   preparePublication: () => ipcRenderer.invoke('publication:prepare'),
-  publishCatalog: token => ipcRenderer.invoke('publication:publish', token),
+  publishCatalog: (token, confirmation) => ipcRenderer.invoke('publication:publish', token, confirmation),
   publicationStatus: () => ipcRenderer.invoke('publication:status'),
   savePublicationToken: token => ipcRenderer.invoke('publication:save-token', token),
   removePublicationToken: () => ipcRenderer.invoke('publication:remove-token'),

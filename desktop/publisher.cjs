@@ -63,11 +63,12 @@ function publisher({ credentials, products, fetchRequest = fetch, history = { re
     review = { ...current, base, token: randomUUID(), expires: Date.now() + 15 * 60000 };
     return { ...current, reviewToken: review.token, changes: differences(base.document.payload, current.payload), firstPublication: base.document.version === null, submittedVersion: base.document.version };
   }
-  async function publish(token) {
+  async function publish(token, confirmAvailabilityReplacement = false) {
     if (writing) throw new Error('A publication is already in progress.');
     if (!review || token !== review.token || Date.now() > review.expires) throw new Error('Review website changes again before publishing.');
     const sent = review;
     if (publicationPreview(products()).version !== sent.version) throw new Error('Products changed after your review. Review website changes again.');
+    if (sent.base.document.version === null && confirmAvailabilityReplacement !== true) throw new Error('Confirm that the first publication replaces website availability with app stock availability before publishing.');
     writing = true;
     try {
       const latest = await remote();

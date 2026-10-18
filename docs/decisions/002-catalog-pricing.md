@@ -42,3 +42,5 @@ The current backup limit is 10 MiB. Export fails explicitly if it cannot produce
 - `src/redesign/CatalogPage.test.js`: calculator application/save, clothing defaults/add size, failed save and unsaved-edit protection.
 
 Verification: 13 Node tests and 12 Jest tests passed; strict React build passed. Electron smoke checks verified all 93 imported products, expanded clothing sizes, calculator application and persistence after reload, and compact-width layout. Light catalog and calculator screenshots were inspected. Live-store cutover and website publication have not occurred.
+
+Product thumbnails accept JPEG, PNG, and WebP (up to 15 MB). WebP uses an isolated, network-disabled Chromium decoder because nativeImage does not decode it. Stored thumbnails remain bounded JPEG images (maximum 320 px and 80 KB), preserving existing backup and billing compatibility. Transparent WebP pixels use a white background; animated input is stored as a static thumbnail.

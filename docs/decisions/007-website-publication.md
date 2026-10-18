@@ -29,3 +29,4 @@ The website adapter is applied locally to the website develop checkout. It retai
 - Demonstrate an actual staging/deployed update, retained photos, offline retry, and pending edits during deployment. Local mock tests do not establish live synchronization.
 
 No catalog or source-code deployment was performed during implementation. Phase 6 remains open until end-to-end deployment evidence is collected.
+First-publication safeguard: review now states explicitly that app stock availability replaces website availability, shows resulting Available/Unavailable totals, and recommends cancelling until stock review is complete. An unchecked acknowledgement blocks publishing; main also rejects missing/nonboolean confirmation for an initial remote catalog. Starting a new review resets the acknowledgement. No publication or deployment is authorized by adding this safeguard.

@@ -176,6 +176,7 @@ module.exports = async function smokeCheck(window, directory) {
   if(!shareText.includes('KC-000002') || shareText.includes('profit') || shareText.includes('Purchase cost')) throw new Error('WhatsApp summary invalid.');
   await screenshot('whatsapp-review.png');
   await require('./invoice-smoke.cjs')(window,directory);
+  await require('./thumbnail-smoke.cjs')(window);
   await click('Website publishing');
   await waitFor("document.body.textContent.includes('Review your website catalog') && !document.querySelector('.kc-theme select').disabled");
   await press('Preview website catalog');
